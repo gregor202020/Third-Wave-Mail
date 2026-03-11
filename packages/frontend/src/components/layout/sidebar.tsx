@@ -28,7 +28,7 @@ export function Sidebar() {
           return (
             <Tooltip key={item.href}>
               <TooltipTrigger
-                render={<Link href={item.href} />}
+                render={<Link href={item.href} aria-label={item.label} />}
                 className={cn(
                   'relative w-10 h-10 rounded-[10px] flex items-center justify-center transition-colors',
                   isActive
@@ -54,7 +54,7 @@ export function Sidebar() {
             return (
               <Tooltip key={item.href}>
                 <TooltipTrigger
-                  render={<Link href={item.href} />}
+                  render={<Link href={item.href} aria-label={item.label} />}
                   className={cn(
                     'w-10 h-10 rounded-[10px] flex items-center justify-center transition-colors',
                     isActive

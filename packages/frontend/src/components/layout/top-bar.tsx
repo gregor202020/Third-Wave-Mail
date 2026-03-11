@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { navItems, sectionTabs } from './nav-config';
+import { navItems, bottomNavItems, sectionTabs } from './nav-config';
 import { Input } from '@/components/ui/input';
 
 interface TopBarProps {
@@ -15,7 +15,8 @@ function TopBarContent({ action }: TopBarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const currentSection = navItems.find(item => pathname.startsWith(item.href));
+  const allNavItems = [...navItems, ...bottomNavItems];
+  const currentSection = allNavItems.find(item => pathname.startsWith(item.href));
   const sectionPath = currentSection?.href || pathname;
   const tabs = sectionTabs[sectionPath] || [];
   const title = currentSection?.label || 'TWMail';

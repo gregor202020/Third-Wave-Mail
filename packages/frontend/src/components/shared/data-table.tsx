@@ -86,6 +86,13 @@ export function DataTable<T>({
             </TableRow>
           </TableHeader>
           <TableBody>
+            {data.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={columns.length + (selectable ? 1 : 0)} className="text-center py-8">
+                  <span className="text-xs text-text-muted">No data to display</span>
+                </TableCell>
+              </TableRow>
+            )}
             {data.map((item, i) => {
               const id = getId?.(item);
               return (

@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, Plus, Trash2 } from 'lucide-react';
+import { Users, Plus, Upload, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
@@ -10,7 +10,6 @@ import { usePagination } from '@/hooks/use-pagination';
 import { TopBar } from '@/components/layout/top-bar';
 import { DataTable, type Column } from '@/components/shared/data-table';
 import { StatusBadge } from '@/components/shared/status-badge';
-import { EmptyState } from '@/components/shared/empty-state';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AddContactDrawer } from '@/components/contacts/add-contact-drawer';
@@ -106,26 +105,45 @@ export default function ContactsPage() {
     <>
       <TopBar
         action={
-          <Button
-            className="bg-tw-blue hover:bg-tw-blue-dark"
-            size="sm"
-            onClick={() => setDrawerOpen(true)}
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add Contact
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link href="/contacts/import">
+              <Button variant="outline" size="sm">
+                <Upload className="w-3.5 h-3.5" />
+                Import
+              </Button>
+            </Link>
+            <Button
+              className="bg-tw-blue hover:bg-tw-blue-dark"
+              size="sm"
+              onClick={() => setDrawerOpen(true)}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Contact
+            </Button>
+          </div>
         }
       />
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-[1200px] mx-auto">
           {!isLoading && contacts.length === 0 ? (
-            <EmptyState
-              icon={Users}
-              title="No contacts yet"
-              description="Add your first contact or import a list to get started."
-              actionLabel="Add Contact"
-              onAction={() => setDrawerOpen(true)}
-            />
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-12 h-12 rounded-full bg-surface flex items-center justify-center mb-4">
+                <Users className="w-6 h-6 text-text-muted" />
+              </div>
+              <h3 className="text-sm font-medium text-text-primary mb-1">No contacts yet</h3>
+              <p className="text-xs text-text-muted max-w-sm">Add your first contact or import a list to get started.</p>
+              <div className="flex items-center gap-2 mt-4">
+                <Button onClick={() => setDrawerOpen(true)} className="bg-tw-blue hover:bg-tw-blue-dark" size="sm">
+                  Add Contact
+                </Button>
+                <Link href="/contacts/import">
+                  <Button variant="outline" size="sm">
+                    <Upload className="w-3.5 h-3.5" />
+                    Import
+                  </Button>
+                </Link>
+              </div>
+            </div>
           ) : (
             <DataTable
               columns={columns}

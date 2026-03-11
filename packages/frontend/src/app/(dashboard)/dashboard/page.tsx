@@ -33,9 +33,9 @@ export default function DashboardPage() {
                   value={formatNumber(data?.total_contacts ?? 0)}
                   subtitle={`+${formatNumber(data?.new_contacts_this_month ?? 0)} this month`}
                 />
-                <StatCard label="Open Rate" value={formatPercent(data?.avg_open_rate ?? 0)} trend="+3.2%" trendUp />
-                <StatCard label="Click Rate" value={formatPercent(data?.avg_click_rate ?? 0)} trend="+1.1%" trendUp />
-                <StatCard label="Bounce Rate" value={formatPercent(data?.avg_bounce_rate ?? 0)} trend="Healthy" trendUp />
+                <StatCard label="Open Rate" value={formatPercent(data?.avg_open_rate ?? 0)} trend={data?.open_rate_trend ? `${data.open_rate_trend > 0 ? '+' : ''}${formatPercent(data.open_rate_trend)}` : undefined} trendUp={data?.open_rate_trend ? data.open_rate_trend > 0 : undefined} />
+                <StatCard label="Click Rate" value={formatPercent(data?.avg_click_rate ?? 0)} trend={data?.click_rate_trend ? `${data.click_rate_trend > 0 ? '+' : ''}${formatPercent(data.click_rate_trend)}` : undefined} trendUp={data?.click_rate_trend ? data.click_rate_trend > 0 : undefined} />
+                <StatCard label="Bounce Rate" value={formatPercent(data?.avg_bounce_rate ?? 0)} trend={data?.bounce_rate_healthy !== undefined ? (data.bounce_rate_healthy ? 'Healthy' : 'High') : undefined} trendUp={data?.bounce_rate_healthy} />
               </>
             )}
           </div>
@@ -67,6 +67,9 @@ export default function DashboardPage() {
                       <span className="text-[10px] text-text-muted">{timeAgo(c.created_at)}</span>
                     </Link>
                   ))}
+                  {(!data?.recent_campaigns || data.recent_campaigns.length === 0) && (
+                    <p className="text-xs text-text-muted text-center py-4">No campaigns yet</p>
+                  )}
                 </div>
               </div>
 
