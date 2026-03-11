@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/use-auth';
 import { navItems, bottomNavItems } from './nav-config';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -11,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { logout } = useAuth();
 
   return (
     <TooltipProvider delay={0}>
@@ -80,7 +82,7 @@ export function Sidebar() {
               <DropdownMenuItem render={<Link href="/settings" />}>
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-status-danger">
+              <DropdownMenuItem className="text-status-danger" onClick={() => logout()}>
                 <LogOut className="w-4 h-4 mr-2" />
                 Log out
               </DropdownMenuItem>

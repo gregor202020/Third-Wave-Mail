@@ -12,6 +12,15 @@ export interface WebhookJobData {
   attempt: number;
 }
 
+// Exponential backoff delays: 30s, 2m, 8m, 32m, 2h
+const BACKOFF_DELAYS_MS = [
+  30 * 1000,
+  2 * 60 * 1000,
+  8 * 60 * 1000,
+  32 * 60 * 1000,
+  2 * 60 * 60 * 1000,
+];
+
 export function createWebhookWorker(): Worker {
   const redis = getRedis();
 
@@ -20,6 +29,21 @@ export function createWebhookWorker(): Worker {
     async (job: Job<WebhookJobData>) => {
       const { deliveryId, endpointId, url, secret, eventType, payload, attempt } = job.data;
       const db = getDb();
+
+      // Dedup: skip if this delivery has already been completed or permanently failed
+      const existing = await db
+        .selectFrom('webhook_deliveries')
+        .select('status')
+        .where('id', '=', deliveryId)
+        .executeTakeFirst();
+
+      if (
+        existing &&
+        (existing.status === WebhookDeliveryStatus.DELIVERED ||
+          existing.status === WebhookDeliveryStatus.FAILED)
+      ) {
+        return { skipped: true, reason: 'already_processed' };
+      }
 
       const body = JSON.stringify(payload);
       const signature = createHmac('sha256', secret).update(body).digest('hex');
@@ -114,7 +138,26 @@ export function createWebhookWorker(): Worker {
           return { failed: true, error: err.message };
         }
 
-        throw err; // BullMQ will retry
+        // Re-enqueue with exponential backoff delay
+        const { Queue } = await import('bullmq');
+        const webhookQueue = new Queue('webhook', { connection: redis as any });
+        const delayMs = BACKOFF_DELAYS_MS[attempt - 1] ?? BACKOFF_DELAYS_MS[BACKOFF_DELAYS_MS.length - 1]!;
+        const nextRetryAt = new Date(Date.now() + delayMs);
+
+        await db
+          .updateTable('webhook_deliveries')
+          .set({ next_retry_at: nextRetryAt })
+          .where('id', '=', deliveryId)
+          .execute();
+
+        await webhookQueue.add(
+          'deliver',
+          { deliveryId, endpointId, url, secret, eventType, payload, attempt: attempt + 1 },
+          { delay: delayMs },
+        );
+        await webhookQueue.close();
+
+        return { retrying: true, attempt, nextDelayMs: delayMs };
       }
     },
     {

@@ -31,7 +31,7 @@ const updateSchema = z.object({
 });
 
 export const webhookRoutes: FastifyPluginAsync = async (app) => {
-  app.addHook('preHandler', requireAuth);
+  app.addHook('preHandler', requireAdmin());
 
   // GET /api/webhooks
   app.get('/', async () => {

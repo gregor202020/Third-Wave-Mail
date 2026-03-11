@@ -5,6 +5,7 @@ import { api } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { formatNumber, formatPercent } from '@/lib/utils';
 import { TopBar } from '@/components/layout/top-bar';
+import { StatCardSkeleton, ChartSkeleton } from '@/components/shared/loading-skeleton';
 import { StatCard } from '@/components/reports/stat-card';
 import { LineChartWidget } from '@/components/reports/line-chart-widget';
 import { DonutChartWidget } from '@/components/reports/donut-chart-widget';
@@ -39,22 +40,22 @@ interface DeliverabilityPoint {
 export default function ReportsOverviewPage() {
   const [growthRange, setGrowthRange] = useState('30d');
 
-  const { data: overview } = useQuery({
+  const { data: overview, isLoading: overviewLoading } = useQuery({
     queryKey: queryKeys.reports.overview,
     queryFn: () => api.get<OverviewData>('/reports/overview'),
   });
 
-  const { data: growth } = useQuery({
+  const { data: growth, isLoading: growthLoading } = useQuery({
     queryKey: queryKeys.reports.growth(growthRange),
     queryFn: () => api.get<GrowthPoint[]>(`/reports/growth?range=${growthRange}`),
   });
 
-  const { data: engagement } = useQuery({
+  const { data: engagement, isLoading: engagementLoading } = useQuery({
     queryKey: queryKeys.reports.engagement,
     queryFn: () => api.get<EngagementData>('/reports/engagement'),
   });
 
-  const { data: deliverability } = useQuery({
+  const { data: deliverability, isLoading: deliverabilityLoading } = useQuery({
     queryKey: queryKeys.reports.deliverability('30d'),
     queryFn: () => api.get<DeliverabilityPoint[]>('/reports/deliverability?range=30d'),
   });
@@ -80,22 +81,33 @@ export default function ReportsOverviewPage() {
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-[1200px] mx-auto space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard
-              label="Total Sent"
-              value={overview ? formatNumber(overview.totalSent) : '--'}
-            />
-            <StatCard
-              label="Avg Open Rate"
-              value={overview ? formatPercent(overview.avgOpenRate) : '--'}
-            />
-            <StatCard
-              label="Avg Click Rate"
-              value={overview ? formatPercent(overview.avgClickRate) : '--'}
-            />
-            <StatCard
-              label="Avg Bounce Rate"
-              value={overview ? formatPercent(overview.avgBounceRate) : '--'}
-            />
+            {overviewLoading ? (
+              <>
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+              </>
+            ) : (
+              <>
+                <StatCard
+                  label="Total Sent"
+                  value={overview ? formatNumber(overview.totalSent) : '--'}
+                />
+                <StatCard
+                  label="Avg Open Rate"
+                  value={overview ? formatPercent(overview.avgOpenRate) : '--'}
+                />
+                <StatCard
+                  label="Avg Click Rate"
+                  value={overview ? formatPercent(overview.avgClickRate) : '--'}
+                />
+                <StatCard
+                  label="Avg Bounce Rate"
+                  value={overview ? formatPercent(overview.avgBounceRate) : '--'}
+                />
+              </>
+            )}
           </div>
 
           <div>
@@ -115,24 +127,36 @@ export default function ReportsOverviewPage() {
                 ))}
               </div>
             </div>
-            <LineChartWidget
-              title=""
-              data={growth ?? []}
-              lines={[{ dataKey: 'contacts', color: '#0170B9' }]}
-              xDataKey="date"
-              height={220}
-            />
+            {growthLoading ? (
+              <ChartSkeleton />
+            ) : (
+              <LineChartWidget
+                title=""
+                data={growth ?? []}
+                lines={[{ dataKey: 'contacts', color: '#0170B9' }]}
+                xDataKey="date"
+                height={220}
+              />
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DonutChartWidget title="Engagement Breakdown" data={donutData} />
-            <LineChartWidget
-              title="Deliverability Trend"
-              data={deliverability ?? []}
-              lines={[{ dataKey: 'deliveredRate', color: '#22c55e' }]}
-              xDataKey="date"
-              height={180}
-            />
+            {engagementLoading ? (
+              <ChartSkeleton />
+            ) : (
+              <DonutChartWidget title="Engagement Breakdown" data={donutData} />
+            )}
+            {deliverabilityLoading ? (
+              <ChartSkeleton />
+            ) : (
+              <LineChartWidget
+                title="Deliverability Trend"
+                data={deliverability ?? []}
+                lines={[{ dataKey: 'deliveredRate', color: '#22c55e' }]}
+                xDataKey="date"
+                height={180}
+              />
+            )}
           </div>
         </div>
       </div>

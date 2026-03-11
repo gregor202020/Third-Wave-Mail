@@ -6,6 +6,7 @@ import { api } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { formatNumber, formatPercent } from '@/lib/utils';
 import { TopBar } from '@/components/layout/top-bar';
+import { ChartSkeleton } from '@/components/shared/loading-skeleton';
 import { LineChartWidget } from '@/components/reports/line-chart-widget';
 import { DataTable, type Column } from '@/components/shared/data-table';
 
@@ -101,16 +102,20 @@ export default function DeliverabilityPage() {
             </div>
           )}
 
-          <LineChartWidget
-            title="Bounce & Complaint Rates"
-            data={data?.trend ?? []}
-            lines={[
-              { dataKey: 'bounceRate', color: '#C41E2A' },
-              { dataKey: 'complaintRate', color: '#f59e0b', dashed: true },
-            ]}
-            xDataKey="date"
-            height={240}
-          />
+          {isLoading ? (
+            <ChartSkeleton />
+          ) : (
+            <LineChartWidget
+              title="Bounce & Complaint Rates"
+              data={data?.trend ?? []}
+              lines={[
+                { dataKey: 'bounceRate', color: '#C41E2A' },
+                { dataKey: 'complaintRate', color: '#f59e0b', dashed: true },
+              ]}
+              xDataKey="date"
+              height={240}
+            />
+          )}
 
           <div>
             <h3 className="text-sm font-semibold text-text-primary mb-3">Domain Breakdown</h3>

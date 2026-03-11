@@ -9,7 +9,6 @@ import { queryKeys } from '@/lib/query-keys';
 import { TopBar } from '@/components/layout/top-bar';
 import { CampaignAccordion } from '@/components/campaigns/campaign-accordion';
 import { TableSkeleton } from '@/components/shared/loading-skeleton';
-import { Button } from '@/components/ui/button';
 import type { Campaign } from '@/types';
 import { toast } from 'sonner';
 
@@ -29,6 +28,7 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
       api.patch<Campaign>(`/campaigns/${campaignId}`, data),
     onSuccess: (updated) => {
       queryClient.setQueryData(queryKeys.campaigns.detail(campaignId), updated);
+      queryClient.invalidateQueries({ queryKey: queryKeys.campaigns.all });
     },
     onError: () => {
       toast.error('Failed to save campaign');

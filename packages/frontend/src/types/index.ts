@@ -84,7 +84,7 @@ export interface AuthUser {
   id: number;
   email: string;
   name: string;
-  role: string;
+  role: number;
 }
 
 export interface ApiResponse<T> {

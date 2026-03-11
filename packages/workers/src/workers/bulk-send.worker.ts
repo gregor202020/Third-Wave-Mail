@@ -98,7 +98,9 @@ export function createBulkSendWorker(): Worker {
 
       // Inject tracking
       html = injectTrackingPixel(html, messageId);
-      html = rewriteLinks(html, messageId);
+      const linkResult = rewriteLinks(html, messageId);
+      html = linkResult.html;
+      const linkMap = linkResult.linkMap;
 
       // Add preview text if present
       if (previewText) {
@@ -139,7 +141,7 @@ export function createBulkSendWorker(): Worker {
         .where('id', '=', messageId)
         .execute();
 
-      // Create sent event
+      // Create sent event (include link_map so click tracking can resolve URLs)
       await db
         .insertInto('events')
         .values({
@@ -149,6 +151,7 @@ export function createBulkSendWorker(): Worker {
           variant_id: variantId ?? null,
           message_id: messageId,
           event_time: new Date(),
+          metadata: Object.keys(linkMap).length > 0 ? { link_map: linkMap } : null,
         })
         .execute();
 
@@ -158,6 +161,24 @@ export function createBulkSendWorker(): Worker {
         .set((eb: any) => ({ total_sent: eb('total_sent', '+', 1) }))
         .where('id', '=', campaignId)
         .execute();
+
+      // Check if all queued messages for this campaign have been sent.
+      // If no more QUEUED messages remain, transition campaign from SENDING → SENT.
+      const remaining = await db
+        .selectFrom('messages')
+        .select(db.fn.countAll<number>().as('count'))
+        .where('campaign_id', '=', campaignId)
+        .where('status', '=', MessageStatus.QUEUED)
+        .executeTakeFirstOrThrow();
+
+      if (Number(remaining.count) === 0) {
+        await db
+          .updateTable('campaigns')
+          .set({ status: CampaignStatus.SENT, send_completed_at: new Date() })
+          .where('id', '=', campaignId)
+          .where('status', '=', CampaignStatus.SENDING)
+          .execute();
+      }
 
       return { sent: true, messageId, sesMessageId };
     },
@@ -248,8 +269,12 @@ export function createCampaignSendWorker(): Worker {
         const testPct = abConfig.test_percentage ?? 20;
         const testSize = Math.ceil(contactIds.length * (testPct / 100));
 
-        // Shuffle contacts for random assignment
-        const shuffled = [...contactIds].sort(() => Math.random() - 0.5);
+        // Shuffle contacts for random assignment (Fisher-Yates)
+        const shuffled = [...contactIds];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+        }
         const testContacts = shuffled.slice(0, testSize);
         const holdbackContacts = shuffled.slice(testSize);
 

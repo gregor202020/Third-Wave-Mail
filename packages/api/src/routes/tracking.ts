@@ -69,6 +69,16 @@ export const trackingRoutes: FastifyPluginAsync = async (app) => {
         }
       }
 
+      // Validate redirect URL to prevent open redirect (block javascript:, data:, etc.)
+      try {
+        const parsed = new URL(targetUrl);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          targetUrl = 'https://thirdwavebbq.com.au'; // fallback for unsafe protocols
+        }
+      } catch {
+        targetUrl = 'https://thirdwavebbq.com.au'; // fallback for malformed URLs
+      }
+
       // Record click event async
       recordClick(db, messageId, linkHash, targetUrl, request).catch(() => {});
 

@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { listApiKeys, createApiKey, updateApiKey, deleteApiKey, rotateApiKey } from '../services/api-key.service.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireAdmin } from '../middleware/auth.js';
 
 const createSchema = z.object({
   name: z.string().min(1).max(100),
@@ -15,7 +15,7 @@ const updateSchema = z.object({
 });
 
 export const apiKeyRoutes: FastifyPluginAsync = async (app) => {
-  app.addHook('preHandler', requireAuth);
+  app.addHook('preHandler', requireAdmin());
 
   // GET /api/api-keys
   app.get('/', async (request, reply) => {

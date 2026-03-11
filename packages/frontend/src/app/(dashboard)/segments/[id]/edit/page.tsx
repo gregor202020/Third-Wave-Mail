@@ -30,9 +30,12 @@ export default function EditSegmentPage() {
     enabled: !!id,
   });
 
+  // One-time form initialization from server data
   useEffect(() => {
     if (segment && !initialized) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time form init from fetched data
       setName(segment.name);
+       
       setGroups(
         segment.rules && segment.rules.length > 0
           ? segment.rules

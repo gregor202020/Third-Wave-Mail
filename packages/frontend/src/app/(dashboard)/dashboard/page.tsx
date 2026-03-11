@@ -10,10 +10,37 @@ import { CampaignStatusDot } from '@/components/shared/status-badge';
 import { formatNumber, formatPercent, timeAgo } from '@/lib/utils';
 import Link from 'next/link';
 
+interface DailySend {
+  day: string;
+  count: number;
+}
+
+interface RecentCampaign {
+  id: number;
+  name: string;
+  status: number;
+  total_sent: number;
+  open_rate: number;
+  created_at: string;
+}
+
+interface OverviewData {
+  total_contacts: number;
+  new_contacts_this_month: number;
+  avg_open_rate: number;
+  open_rate_trend: number;
+  avg_click_rate: number;
+  click_rate_trend: number;
+  avg_bounce_rate: number;
+  bounce_rate_healthy?: boolean;
+  daily_sends: DailySend[];
+  recent_campaigns: RecentCampaign[];
+}
+
 export default function DashboardPage() {
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.reports.overview,
-    queryFn: () => api.get<{ data: any }>('/reports/overview').then(r => r.data),
+    queryFn: () => api.get<{ data: OverviewData }>('/reports/overview').then(r => r.data),
   });
 
   return (
@@ -47,7 +74,7 @@ export default function DashboardPage() {
                 <BarChartWidget
                   title="Send Volume"
                   subtitle="Last 7 days"
-                  data={data?.daily_sends?.map((d: any) => ({ label: d.day, value: d.count })) ?? []}
+                  data={data?.daily_sends?.map((d: DailySend) => ({ label: d.day, value: d.count })) ?? []}
                 />
               )}
             </div>
@@ -57,7 +84,7 @@ export default function DashboardPage() {
               <div className="bg-card border border-card-border rounded-[14px] p-5">
                 <h3 className="text-sm font-semibold text-text-primary mb-4">Recent Campaigns</h3>
                 <div className="space-y-3">
-                  {data?.recent_campaigns?.slice(0, 4).map((c: any) => (
+                  {data?.recent_campaigns?.slice(0, 4).map((c: RecentCampaign) => (
                     <Link key={c.id} href={`/campaigns/${c.id}/report`} className="flex items-center gap-3 group">
                       <CampaignStatusDot status={c.status} />
                       <div className="flex-1 min-w-0">

@@ -42,7 +42,7 @@ export default function ContactDetailPage() {
   });
 
   const { data: messages, isLoading: messagesLoading } = useQuery({
-    queryKey: ['contacts', 'messages', contactId],
+    queryKey: queryKeys.contacts.messages(contactId),
     queryFn: () =>
       api.get<{ data: Array<{ id: number; campaign_name: string; subject: string; status: number; sent_at: string }> }>(
         `/contacts/${contactId}/messages`

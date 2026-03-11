@@ -3,16 +3,17 @@
  * Seed script to create the initial admin user.
  *
  * Usage:
- *   npx tsx packages/api/src/seed-admin.ts
+ *   npx tsx packages/api/src/seed-admin.ts --email admin@example.com --password 'securepass'
  *   # or from packages/api:
- *   npm run seed:admin
+ *   npm run seed:admin -- --email admin@example.com --password 'securepass'
  *
  * Environment: DATABASE_URL must be set.
  *
- * Prompts (or uses defaults):
- *   --email    admin@twmail.local
- *   --name     Admin
- *   --password admin123
+ * Required flags:
+ *   --email    Admin email address
+ *   --password Admin password
+ * Optional:
+ *   --name     Display name (default: "Admin")
  */
 import { getDb, destroyDb } from '@twmail/shared';
 import bcrypt from 'bcrypt';
@@ -22,15 +23,21 @@ const BCRYPT_ROUNDS = 12;
 
 async function main() {
   const args = process.argv.slice(2);
-  function getArg(flag: string, fallback: string): string {
+  function getArg(flag: string, fallback?: string): string | undefined {
     const idx = args.indexOf(flag);
     if (idx !== -1 && args[idx + 1]) return args[idx + 1]!;
     return fallback;
   }
 
-  const email: string = getArg('--email', 'admin@twmail.local');
-  const name: string = getArg('--name', 'Admin');
-  const password: string = getArg('--password', 'admin123');
+  const email = getArg('--email');
+  const name: string = getArg('--name', 'Admin')!;
+  const password = getArg('--password');
+
+  if (!email || !password) {
+    console.error('Error: --email and --password flags are required.');
+    console.error('Usage: npx tsx seed-admin.ts --email <email> --password <password> [--name <name>]');
+    process.exit(1);
+  }
 
   const db = getDb();
 
@@ -63,7 +70,7 @@ async function main() {
   console.log(`  Email: ${user.email}`);
   console.log(`  Name:  ${user.name}`);
   console.log(`  Role:  Admin`);
-  console.log(`  Pass:  ${password}`);
+  console.log(`  Pass:  ********`);
 
   await destroyDb();
   process.exit(0);

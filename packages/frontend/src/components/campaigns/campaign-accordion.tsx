@@ -175,7 +175,7 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
   const abValid = !formData.ab_test_enabled || formData.ab_test_variants.every((v) => v.value);
   const resendValid = !formData.resend_enabled || !!formData.resend_delay;
 
-  const allValid = setupValid && recipientsValid && schedulingValid && abValid && resendValid;
+  const allValid = setupValid && recipientsValid && designValid && schedulingValid && abValid && resendValid;
 
   const sections = [
     { title: 'Setup', icon: Settings, valid: setupValid },

@@ -120,7 +120,6 @@ export default function ContactImportPage() {
         toast.error('Please upload a CSV file');
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 

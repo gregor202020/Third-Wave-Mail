@@ -5,6 +5,7 @@ export const queryKeys = {
     list: (filters: Record<string, unknown>) => ['contacts', 'list', filters] as const,
     detail: (id: number) => ['contacts', 'detail', id] as const,
     timeline: (id: number) => ['contacts', 'timeline', id] as const,
+    messages: (id: number) => ['contacts', 'messages', id] as const,
   },
   campaigns: {
     all: ['campaigns'] as const,
@@ -52,6 +53,7 @@ export const queryKeys = {
     errors: (id: number) => ['imports', 'errors', id] as const,
     mappings: ['imports', 'mappings'] as const,
   },
+  settings: { all: ['settings'] as const },
   apiKeys: { list: ['api-keys', 'list'] as const },
   users: {
     all: ['users'] as const,

@@ -24,6 +24,7 @@ declare module 'fastify' {
   interface FastifyRequest {
     user?: AuthUser;
     authType?: 'jwt' | 'api-key';
+    apiKeyScopes?: string[];
   }
 }
 
@@ -102,6 +103,30 @@ async function authenticateApiKey(request: import('fastify').FastifyRequest, tok
         role: key.role,
       };
       request.authType = 'api-key';
+      request.apiKeyScopes = (key.scopes as string[] | null) ?? [];
+
+      // Enforce API key scopes: read = GET only, write = GET + mutating, admin = everything
+      const method = request.method.toUpperCase();
+      const scopes = request.apiKeyScopes;
+      const hasAdmin = scopes.includes('admin');
+      const hasWrite = scopes.includes('write');
+      const hasRead = scopes.includes('read');
+
+      if (!hasAdmin) {
+        // DELETE requires admin scope
+        if (method === 'DELETE') {
+          throw new AppError(403, ErrorCode.FORBIDDEN, 'API key lacks required scope: admin');
+        }
+        if (!hasWrite) {
+          // POST, PATCH, PUT require at least write scope
+          if (['POST', 'PATCH', 'PUT'].includes(method)) {
+            throw new AppError(403, ErrorCode.FORBIDDEN, 'API key lacks required scope: write');
+          }
+          if (!hasRead) {
+            throw new AppError(403, ErrorCode.FORBIDDEN, 'API key lacks required scope: read');
+          }
+        }
+      }
 
       // Update last_used_at (fire and forget)
       db.updateTable('api_keys')

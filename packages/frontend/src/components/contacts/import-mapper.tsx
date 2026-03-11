@@ -48,7 +48,7 @@ interface ImportMapperProps {
   onConfirm: (mapping: Record<string, string>) => void;
 }
 
-export function ImportMapper({ importId: _importId, detectedColumns, onConfirm }: ImportMapperProps) {
+export function ImportMapper({ detectedColumns, onConfirm }: ImportMapperProps) {
   const [mapping, setMapping] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -61,6 +61,7 @@ export function ImportMapper({ importId: _importId, detectedColumns, onConfirm }
         autoMapped[col] = '__skip';
       }
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time column auto-mapping init
     setMapping(autoMapped);
   }, [detectedColumns]);
 

@@ -8,7 +8,6 @@ import { Plus, MoreHorizontal, KeyRound, Trash2, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
-import { ROLE_LABELS } from '@/lib/constants';
 import { formatDate, timeAgo } from '@/lib/utils';
 import { UserRole } from '@twmail/shared/types';
 import { TopBar } from '@/components/layout/top-bar';
@@ -42,7 +41,7 @@ const inviteSchema = z.object({
   email: z.string().email('Valid email is required'),
   name: z.string().min(1, 'Name is required').max(255),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  role: z.coerce.number().refine((r) => [UserRole.ADMIN, UserRole.EDITOR, UserRole.VIEWER].includes(r as any)),
+  role: z.coerce.number().refine((r) => [UserRole.ADMIN as number, UserRole.EDITOR as number, UserRole.VIEWER as number].includes(r)),
 });
 type InviteForm = z.infer<typeof inviteSchema>;
 

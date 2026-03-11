@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -8,6 +8,7 @@ import type { Template } from '@/types';
 
 export default function NewTemplatePage() {
   const router = useRouter();
+  const createdRef = useRef(false);
 
   const createMutation = useMutation({
     mutationFn: () =>
@@ -22,6 +23,8 @@ export default function NewTemplatePage() {
   });
 
   useEffect(() => {
+    if (createdRef.current) return;
+    createdRef.current = true;
     createMutation.mutate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

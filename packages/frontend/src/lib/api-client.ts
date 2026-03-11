@@ -36,12 +36,20 @@ async function apiClient<T>(endpoint: string, options: RequestOptions = {}): Pro
 
   const res = await fetch(url, config);
   if (res.status === 204) return undefined as T;
-  const json = await res.json();
-  if (!res.ok) {
-    const error = json.error || {};
-    throw new ApiError(res.status, error.code || 'UNKNOWN', error.message || 'An error occurred', error.details);
+  let json: Record<string, unknown>;
+  try {
+    json = await res.json();
+  } catch {
+    if (!res.ok) {
+      throw new ApiError(res.status, 'UNKNOWN', `Request failed with status ${res.status}`);
+    }
+    return undefined as T;
   }
-  return json;
+  if (!res.ok) {
+    const error = (json.error || {}) as Record<string, unknown>;
+    throw new ApiError(res.status, (error.code as string) || 'UNKNOWN', (error.message as string) || 'An error occurred', error.details as Array<{ field: string; message: string }>);
+  }
+  return json as T;
 }
 
 export const api = {
@@ -53,12 +61,21 @@ export const api = {
     const res = await fetch(`/api/proxy${endpoint}`, {
       method: 'POST', body: formData, credentials: 'include',
     });
-    const json = await res.json();
-    if (!res.ok) {
-      const error = json.error || {};
-      throw new ApiError(res.status, error.code || 'UNKNOWN', error.message || 'Upload failed', error.details);
+    if (res.status === 204) return undefined as T;
+    let json: Record<string, unknown>;
+    try {
+      json = await res.json();
+    } catch {
+      if (!res.ok) {
+        throw new ApiError(res.status, 'UNKNOWN', `Upload failed with status ${res.status}`);
+      }
+      return undefined as T;
     }
-    return json;
+    if (!res.ok) {
+      const error = (json.error || {}) as Record<string, unknown>;
+      throw new ApiError(res.status, (error.code as string) || 'UNKNOWN', (error.message as string) || 'Upload failed', error.details as Array<{ field: string; message: string }>);
+    }
+    return json as T;
   },
 };
 

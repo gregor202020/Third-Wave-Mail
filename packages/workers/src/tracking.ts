@@ -15,9 +15,12 @@ export function injectTrackingPixel(html: string, messageId: string): string {
 
 // Rewrite all links for click tracking
 // Replaces href="https://..." with href="BASE_URL/t/c/{messageId}/{linkHash}"
-export function rewriteLinks(html: string, messageId: string): string {
+// Returns { html, linkMap } where linkMap maps linkHash -> original URL
+export function rewriteLinks(html: string, messageId: string): { html: string; linkMap: Record<string, string> } {
+  const linkMap: Record<string, string> = {};
+
   // Match href="..." in anchor tags, skip mailto: and tel: and tracking URLs
-  return html.replace(
+  const rewritten = html.replace(
     /href="(https?:\/\/[^"]+)"/gi,
     (_match, url: string) => {
       // Don't rewrite our own tracking URLs
@@ -29,9 +32,12 @@ export function rewriteLinks(html: string, messageId: string): string {
         return _match;
       }
       const linkHash = hashUrl(url);
+      linkMap[linkHash] = url;
       return `href="${BASE_URL}/t/c/${messageId}/${linkHash}"`;
     },
   );
+
+  return { html: rewritten, linkMap };
 }
 
 // Generate a short hash for a URL
