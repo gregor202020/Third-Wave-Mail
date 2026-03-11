@@ -5,7 +5,8 @@
   "workspaces": [
     "packages/shared",
     "packages/api",
-    "packages/workers"
+    "packages/workers",
+    "packages/frontend"
   ],
   "scripts": {
     "dev:api": "npm run dev --workspace=packages/api",
