@@ -21,6 +21,8 @@ async function proxyRequest(req: NextRequest, { params }: { params: Promise<{ pa
   const contentType = req.headers.get('content-type') || '';
   if (contentType.includes('application/json')) {
     headers['Content-Type'] = 'application/json';
+  } else if (contentType.includes('multipart/form-data')) {
+    headers['Content-Type'] = contentType;
   }
 
   let body: BodyInit | undefined;

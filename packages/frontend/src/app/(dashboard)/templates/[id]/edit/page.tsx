@@ -33,7 +33,7 @@ export default function TemplateEditorPage() {
 
   const { data: template, isLoading } = useQuery({
     queryKey: queryKeys.templates.detail(id),
-    queryFn: () => api.get<Template>(`/templates/${id}`),
+    queryFn: () => api.get<{ data: Template }>(`/templates/${id}`).then(r => r.data),
     enabled: !!id,
   });
 

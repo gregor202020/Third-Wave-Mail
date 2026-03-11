@@ -43,7 +43,7 @@ export default function CampaignReportPage({ params }: { params: Promise<{ id: s
 
   const { data: report, isLoading } = useQuery({
     queryKey: queryKeys.campaigns.report(campaignId),
-    queryFn: () => api.get<CampaignReport>(`/campaigns/${campaignId}/report`),
+    queryFn: () => api.get<{ data: CampaignReport }>(`/campaigns/${campaignId}/report`).then(r => r.data),
     refetchInterval: (query) => {
       const data = query.state.data;
       return data?.campaign && isSending(data.campaign) ? 5000 : false;

@@ -48,7 +48,7 @@ export default function GeneralSettingsPage() {
 
   const { data: settings, isLoading } = useQuery({
     queryKey: queryKeys.settings.all,
-    queryFn: () => api.get<Settings>('/settings'),
+    queryFn: () => api.get<{ data: Settings }>('/settings').then(r => r.data),
     retry: false,
   });
 
@@ -76,7 +76,7 @@ export default function GeneralSettingsPage() {
         timezone,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.all });
       toast.success('Settings saved');
     },
     onError: () => {

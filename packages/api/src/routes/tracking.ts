@@ -11,6 +11,15 @@ const TRACKING_PIXEL = Buffer.from(
 // Apple proxy IP ranges for machine open detection
 const APPLE_PROXY_PREFIXES = ['17.'];
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export const trackingRoutes: FastifyPluginAsync = async (app) => {
   // GET /t/o/:messageId.png — Open tracking pixel
   app.get<{ Params: { messageId: string } }>(
@@ -149,7 +158,7 @@ export const trackingRoutes: FastifyPluginAsync = async (app) => {
 <body>
 <h2>Unsubscribe</h2>
 <p>Click the button below to unsubscribe from our emails.</p>
-<form method="POST" action="/t/u/${request.params.messageId}">
+<form method="POST" action="/t/u/${escapeHtml(request.params.messageId)}">
 <button type="submit" class="btn">Unsubscribe</button>
 </form>
 <p style="margin-top:24px;color:#666;font-size:14px">You can also manage your email preferences in your account settings.</p>

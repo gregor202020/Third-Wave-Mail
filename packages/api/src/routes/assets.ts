@@ -2,6 +2,22 @@ import type { FastifyPluginAsync } from 'fastify';
 import { listAssets, getAsset, uploadAsset, deleteAsset } from '../services/assets.service.js';
 import { requireAuth } from '../middleware/auth.js';
 
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/csv',
+]);
+
 export const assetRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', requireAuth);
 
@@ -10,6 +26,15 @@ export const assetRoutes: FastifyPluginAsync = async (app) => {
     const data = await request.file();
     if (!data) {
       return reply.status(400).send({ error: { code: 'VALIDATION_ERROR', message: 'No file uploaded' } });
+    }
+
+    if (!ALLOWED_MIME_TYPES.has(data.mimetype)) {
+      return reply.status(400).send({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: `File type '${data.mimetype}' is not allowed. Accepted types: images (JPEG, PNG, GIF, WebP, SVG), PDFs, and Office documents.`,
+        },
+      });
     }
 
     const buffer = await data.toBuffer();

@@ -35,6 +35,10 @@ async function apiClient<T>(endpoint: string, options: RequestOptions = {}): Pro
     : `/api/proxy${endpoint}`;
 
   const res = await fetch(url, config);
+  if (res.status === 401 && typeof window !== 'undefined' && !endpoint.startsWith('/auth/')) {
+    window.location.href = '/login';
+    return undefined as T;
+  }
   if (res.status === 204) return undefined as T;
   let json: Record<string, unknown>;
   try {

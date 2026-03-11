@@ -36,7 +36,7 @@ export default function DeliverabilityPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.reports.deliverability(range),
-    queryFn: () => api.get<DeliverabilityData>(`/reports/deliverability?range=${range}`),
+    queryFn: () => api.get<{ data: DeliverabilityData }>(`/reports/deliverability?range=${range}`).then(r => r.data),
   });
 
   const showBounceAlert = (data?.overallBounceRate ?? 0) > 5;

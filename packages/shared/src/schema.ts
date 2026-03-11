@@ -25,6 +25,7 @@ export interface Database {
   imports: ImportsTable;
   webhook_endpoints: WebhookEndpointsTable;
   webhook_deliveries: WebhookDeliveriesTable;
+  settings: SettingsTable;
 }
 
 // ============================================================================
@@ -446,3 +447,20 @@ export interface WebhookDeliveriesTable {
 
 export type WebhookDelivery = Selectable<WebhookDeliveriesTable>;
 export type NewWebhookDelivery = Insertable<WebhookDeliveriesTable>;
+
+// ============================================================================
+// settings
+// ============================================================================
+
+export interface SettingsTable {
+  id: Generated<number>;
+  organization_name: Generated<string>;
+  default_sender_email: Generated<string>;
+  default_sender_name: Generated<string>;
+  timezone: Generated<string>;
+  created_at: Generated<Date>;
+  updated_at: Generated<Date>;
+}
+
+export type Settings = Selectable<SettingsTable>;
+export type SettingsUpdate = Updateable<SettingsTable>;

@@ -42,22 +42,22 @@ export default function ReportsOverviewPage() {
 
   const { data: overview, isLoading: overviewLoading } = useQuery({
     queryKey: queryKeys.reports.overview,
-    queryFn: () => api.get<OverviewData>('/reports/overview'),
+    queryFn: () => api.get<{ data: OverviewData }>('/reports/overview').then(r => r.data),
   });
 
   const { data: growth, isLoading: growthLoading } = useQuery({
     queryKey: queryKeys.reports.growth(growthRange),
-    queryFn: () => api.get<GrowthPoint[]>(`/reports/growth?range=${growthRange}`),
+    queryFn: () => api.get<{ data: GrowthPoint[] }>(`/reports/growth?range=${growthRange}`).then(r => r.data),
   });
 
   const { data: engagement, isLoading: engagementLoading } = useQuery({
     queryKey: queryKeys.reports.engagement,
-    queryFn: () => api.get<EngagementData>('/reports/engagement'),
+    queryFn: () => api.get<{ data: EngagementData }>('/reports/engagement').then(r => r.data),
   });
 
   const { data: deliverability, isLoading: deliverabilityLoading } = useQuery({
     queryKey: queryKeys.reports.deliverability('30d'),
-    queryFn: () => api.get<DeliverabilityPoint[]>('/reports/deliverability?range=30d'),
+    queryFn: () => api.get<{ data: DeliverabilityPoint[] }>('/reports/deliverability?range=30d').then(r => r.data),
   });
 
   const donutData = engagement

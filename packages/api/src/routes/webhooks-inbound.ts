@@ -117,9 +117,17 @@ export const webhooksInboundRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(200).send();
     }
 
-    const messageBody = typeof body['Message'] === 'string'
-      ? JSON.parse(body['Message'])
-      : body['Message'];
+    let messageBody: Record<string, unknown>;
+    if (typeof body['Message'] === 'string') {
+      try {
+        messageBody = JSON.parse(body['Message']);
+      } catch {
+        request.log.warn('Failed to parse SNS Message body as JSON');
+        return reply.status(400).send({ error: 'Invalid SNS Message JSON' });
+      }
+    } else {
+      messageBody = body['Message'] as Record<string, unknown>;
+    }
 
     const notificationType = messageBody?.notificationType ?? messageBody?.eventType;
 

@@ -20,6 +20,7 @@ import { assetRoutes } from './routes/assets.js';
 import { importRoutes } from './routes/imports.js';
 import { reportRoutes } from './routes/reports.js';
 import { userRoutes } from './routes/users.js';
+import { settingsRoutes } from './routes/settings.js';
 
 export async function buildApp() {
   const config = getConfig();
@@ -52,6 +53,7 @@ export async function buildApp() {
   await app.register(importRoutes, { prefix: '/api/contacts/import' });
   await app.register(reportRoutes, { prefix: '/api/reports' });
   await app.register(userRoutes, { prefix: '/api/users' });
+  await app.register(settingsRoutes, { prefix: '/api/settings' });
 
   // Tracking routes (no auth, lightweight)
   await app.register(trackingRoutes);

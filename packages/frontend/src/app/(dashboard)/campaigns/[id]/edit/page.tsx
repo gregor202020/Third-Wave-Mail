@@ -20,7 +20,7 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
 
   const { data: campaign, isLoading } = useQuery({
     queryKey: queryKeys.campaigns.detail(campaignId),
-    queryFn: () => api.get<Campaign>(`/campaigns/${campaignId}`),
+    queryFn: () => api.get<{ data: Campaign }>(`/campaigns/${campaignId}`).then(r => r.data),
   });
 
   const saveMutation = useMutation({

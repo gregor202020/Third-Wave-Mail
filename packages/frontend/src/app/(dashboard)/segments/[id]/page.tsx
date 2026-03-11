@@ -27,7 +27,7 @@ export default function SegmentDetailPage() {
 
   const { data: segment } = useQuery({
     queryKey: queryKeys.segments.detail(id),
-    queryFn: () => api.get<Segment>(`/segments/${id}`),
+    queryFn: () => api.get<{ data: Segment }>(`/segments/${id}`).then(r => r.data),
     enabled: !!id,
   });
 

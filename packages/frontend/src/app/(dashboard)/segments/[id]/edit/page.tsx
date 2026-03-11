@@ -26,7 +26,7 @@ export default function EditSegmentPage() {
 
   const { data: segment } = useQuery({
     queryKey: queryKeys.segments.detail(id),
-    queryFn: () => api.get<Segment & { rules?: SegmentRuleGroup[] }>(`/segments/${id}`),
+    queryFn: () => api.get<{ data: Segment & { rules?: SegmentRuleGroup[] } }>(`/segments/${id}`).then(r => r.data),
     enabled: !!id,
   });
 
