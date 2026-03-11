@@ -78,3 +78,15 @@ export type {
   WebhookDelivery,
   NewWebhookDelivery,
 } from '@twmail/shared';
+
+// Frontend-specific types
+export interface AuthUser {
+  id: number;
+  email: string;
+  name: string;
+  role: string;
+}
+
+export interface ApiResponse<T> {
+  data: T;
+}
