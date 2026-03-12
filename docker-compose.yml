@@ -31,7 +31,7 @@ services:
       - twmail
 
   pgbouncer:
-    image: edoburu/pgbouncer:1.22.0
+    image: edoburu/pgbouncer:latest
     container_name: twmail-pgbouncer
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -93,11 +93,6 @@ services:
         condition: service_started
       redis:
         condition: service_healthy
-    volumes:
-      - ./packages:/app/packages
-      - /app/node_modules
-      - /app/packages/api/node_modules
-      - /app/packages/shared/node_modules
     networks:
       - twmail
 
@@ -150,10 +145,15 @@ services:
       - twmail
 
   frontend:
-    image: node:22-alpine
+    build:
+      context: .
+      dockerfile: packages/frontend/Dockerfile
     container_name: twmail-frontend
-    working_dir: /app
-    command: echo "Frontend placeholder - will be configured in Plan 6"
+    environment:
+      - API_URL=http://api:3000
+      - NODE_ENV=production
+    depends_on:
+      - api
     networks:
       - twmail
 
@@ -169,6 +169,7 @@ services:
       - ${SSL_KEY_PATH:-./nginx/certs/privkey.pem}:/etc/ssl/private/privkey.pem:ro
     depends_on:
       - api
+      - frontend
     networks:
       - twmail
 
