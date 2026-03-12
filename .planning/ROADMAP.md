@@ -52,7 +52,7 @@ Plans:
   4. A server-to-server POST to the unsubscribe endpoint succeeds without session or CSRF token
   5. Importing a CSV cannot re-subscribe a previously bounced, complained, or unsubscribed contact
   6. A campaign cannot be sent without a physical mailing address, regardless of template content
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
 - [ ] 02-01-PLAN.md — SNS bounce/complaint idempotency + physical mailing address enforcement
 - [ ] 02-02-PLAN.md — Import suppression guard + verify already-complete compliance items
@@ -169,7 +169,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Critical Bug Fixes | 3/3 | Complete | 2026-03-13 |
-| 2. Compliance | 0/2 | Planning complete | - |
+| 2. Compliance | 1/2 | In Progress|  |
 | 3. Data Integrity — Analytics | 0/TBD | Not started | - |
 | 4. Data Integrity — Error Handling | 0/TBD | Not started | - |
 | 5. Data Integrity — Tracking & Segments | 0/TBD | Not started | - |

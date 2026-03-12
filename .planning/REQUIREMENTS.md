@@ -19,13 +19,13 @@ Requirements for production-ready launch. Each maps to roadmap phases.
 ### Compliance
 
 - [ ] **COMP-01**: SNS bounce/complaint handler is idempotent (handles duplicate SNS deliveries)
-- [ ] **COMP-02**: Hard bounces immediately suppress contact and prevent future sends
-- [ ] **COMP-03**: Complaints immediately suppress contact and prevent future sends
-- [ ] **COMP-04**: RFC 8058 List-Unsubscribe and List-Unsubscribe-Post headers on every outbound email
-- [ ] **COMP-05**: Unsubscribe endpoint handles server-to-server POST without session/CSRF requirements
+- [x] **COMP-02**: Hard bounces immediately suppress contact and prevent future sends
+- [x] **COMP-03**: Complaints immediately suppress contact and prevent future sends
+- [x] **COMP-04**: RFC 8058 List-Unsubscribe and List-Unsubscribe-Post headers on every outbound email
+- [x] **COMP-05**: Unsubscribe endpoint handles server-to-server POST without session/CSRF requirements
 - [ ] **COMP-06**: Physical mailing address enforced at send layer, not just template layer
-- [ ] **COMP-07**: Import flow does not overwrite bounced/unsubscribed/complained contact status
-- [ ] **COMP-08**: Unsubscribed contacts excluded from pending/scheduled sends at query time
+- [x] **COMP-07**: Import flow does not overwrite bounced/unsubscribed/complained contact status
+- [x] **COMP-08**: Unsubscribed contacts excluded from pending/scheduled sends at query time
 
 ### Data Integrity
 
@@ -131,13 +131,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BUG-05 | Phase 1 | Pending |
 | BUG-06 | Phase 1 | Pending |
 | COMP-01 | Phase 2 | Pending |
-| COMP-02 | Phase 2 | Pending |
-| COMP-03 | Phase 2 | Pending |
-| COMP-04 | Phase 2 | Pending |
-| COMP-05 | Phase 2 | Pending |
+| COMP-02 | Phase 2 | Complete |
+| COMP-03 | Phase 2 | Complete |
+| COMP-04 | Phase 2 | Complete |
+| COMP-05 | Phase 2 | Complete |
 | COMP-06 | Phase 2 | Pending |
-| COMP-07 | Phase 2 | Pending |
-| COMP-08 | Phase 2 | Pending |
+| COMP-07 | Phase 2 | Complete |
+| COMP-08 | Phase 2 | Complete |
 | DATA-01 | Phase 3 | Pending |
 | DATA-02 | Phase 3 | Pending |
 | DATA-03 | Phase 3 | Pending |
