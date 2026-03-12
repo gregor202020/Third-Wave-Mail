@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-data-integrity-error-handling-04-02-PLAN.md
-last_updated: "2026-03-12T23:42:13.796Z"
+stopped_at: Completed 04-data-integrity-error-handling-04-01-PLAN.md
+last_updated: "2026-03-12T23:42:22.728Z"
 last_activity: 2026-03-13 — Plan 02-02 complete (import suppression guard + compliance verification)
 progress:
   total_phases: 12
@@ -77,6 +77,8 @@ Recent decisions affecting current work:
 - [Phase 04-02]: shouldDecrementOnError set immediately after executeTakeFirstOrThrow - message record creation is the point of no return for Redis counter decrement
 - [Phase 04-02]: Finally block does basic SENDING->SENT transition only, not resend-trigger - acceptable to skip on error completion path
 - [Phase 04-02]: total_sent only increments on confirmed SES send - DATA-07 does not require failure counting
+- [Phase 04-01]: Tracking route failures use request.log.error (Pino), service/plugin non-critical failures use console.warn to differentiate infrastructure errors from housekeeping
+- [Phase 04-01]: Fire-and-forget model preserved in all five catch sites — no await added; pixel/redirect responses still return immediately
 
 ### Pending Todos
 
@@ -92,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-12T23:41:52.324Z
-Stopped at: Completed 04-data-integrity-error-handling-04-02-PLAN.md
+Last session: 2026-03-12T23:42:22.726Z
+Stopped at: Completed 04-data-integrity-error-handling-04-01-PLAN.md
 Resume file: None
