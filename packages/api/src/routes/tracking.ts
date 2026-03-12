@@ -40,7 +40,7 @@ export const trackingRoutes: FastifyPluginAsync = async (app) => {
       reply.header('Cache-Control', 'no-cache, no-store, must-revalidate');
 
       // Record open event async (fire and forget)
-      recordOpen(db, messageId, request).catch(() => {});
+      recordOpen(db, messageId, request).catch((err) => { request.log.error({ err, messageId }, 'recordOpen failed'); });
 
       return reply.send(TRACKING_PIXEL);
     },
@@ -95,7 +95,7 @@ export const trackingRoutes: FastifyPluginAsync = async (app) => {
       }
 
       // Record click event async
-      recordClick(db, messageId, linkHash, targetUrl, request).catch(() => {});
+      recordClick(db, messageId, linkHash, targetUrl, request).catch((err) => { request.log.error({ err, messageId, linkHash }, 'recordClick failed'); });
 
       return reply.redirect(targetUrl);
     },
