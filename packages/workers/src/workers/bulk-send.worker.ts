@@ -119,103 +119,136 @@ export function createBulkSendWorker(): Worker {
 
       const messageId = message.id;
 
-      // Process merge tags
-      html = processMergeTags(html, contact, messageId);
-      subject = processMergeTags(subject, contact, messageId);
+      // DATA-07: Once a message record exists we MUST decrement the Redis counter,
+      // regardless of whether the send succeeds or fails.
+      let shouldDecrementOnError = true;
 
-      // Inject tracking
-      html = injectTrackingPixel(html, messageId);
-      const linkResult = rewriteLinks(html, messageId);
-      html = linkResult.html;
-      const linkMap = linkResult.linkMap;
+      try {
+        // Process merge tags
+        html = processMergeTags(html, contact, messageId);
+        subject = processMergeTags(subject, contact, messageId);
 
-      // Add preview text if present
-      if (previewText) {
-        previewText = processMergeTags(previewText, contact, messageId);
-        html = injectPreviewText(html, previewText);
-      }
+        // Inject tracking
+        html = injectTrackingPixel(html, messageId);
+        const linkResult = rewriteLinks(html, messageId);
+        html = linkResult.html;
+        const linkMap = linkResult.linkMap;
 
-      // Get unsubscribe headers
-      const headers = getUnsubscribeHeaders(messageId);
+        // Add preview text if present
+        if (previewText) {
+          previewText = processMergeTags(previewText, contact, messageId);
+          html = injectPreviewText(html, previewText);
+        }
 
-      // Set SES configuration set header
-      headers['X-SES-CONFIGURATION-SET'] = 'marketing';
+        // Get unsubscribe headers
+        const headers = getUnsubscribeHeaders(messageId);
 
-      // Send via SES
-      const fromAddress = campaign.from_name
-        ? `${campaign.from_name} <${campaign.from_email}>`
-        : campaign.from_email;
+        // Set SES configuration set header
+        headers['X-SES-CONFIGURATION-SET'] = 'marketing';
 
-      const sesMessageId = await sendEmail({
-        from: fromAddress,
-        to: contact.email,
-        subject,
-        html,
-        replyTo: campaign.reply_to ?? undefined,
-        configurationSet: 'marketing',
-        headers,
-        messageId,
-      });
+        // Send via SES
+        const fromAddress = campaign.from_name
+          ? `${campaign.from_name} <${campaign.from_email}>`
+          : campaign.from_email;
 
-      // Update message status
-      await db
-        .updateTable('messages')
-        .set({
-          status: MessageStatus.SENT,
-          ses_message_id: sesMessageId ?? null,
-          sent_at: new Date(),
-        })
-        .where('id', '=', messageId)
-        .execute();
+        const sesMessageId = await sendEmail({
+          from: fromAddress,
+          to: contact.email,
+          subject,
+          html,
+          replyTo: campaign.reply_to ?? undefined,
+          configurationSet: 'marketing',
+          headers,
+          messageId,
+        });
 
-      // Create sent event (include link_map so click tracking can resolve URLs)
-      await db
-        .insertInto('events')
-        .values({
-          event_type: EventType.SENT,
-          contact_id: contactId,
-          campaign_id: campaignId,
-          variant_id: variantId ?? null,
-          message_id: messageId,
-          event_time: new Date(),
-          metadata: Object.keys(linkMap).length > 0 ? { link_map: linkMap } : null,
-        })
-        .execute();
+        // Update message status
+        await db
+          .updateTable('messages')
+          .set({
+            status: MessageStatus.SENT,
+            ses_message_id: sesMessageId ?? null,
+            sent_at: new Date(),
+          })
+          .where('id', '=', messageId)
+          .execute();
 
-      // Increment campaign send counter
-      await db
-        .updateTable('campaigns')
-        .set((eb: any) => ({ total_sent: eb('total_sent', '+', 1) }))
-        .where('id', '=', campaignId)
-        .execute();
+        // Create sent event (include link_map so click tracking can resolve URLs)
+        await db
+          .insertInto('events')
+          .values({
+            event_type: EventType.SENT,
+            contact_id: contactId,
+            campaign_id: campaignId,
+            variant_id: variantId ?? null,
+            message_id: messageId,
+            event_time: new Date(),
+            metadata: Object.keys(linkMap).length > 0 ? { link_map: linkMap } : null,
+          })
+          .execute();
 
-      // BUG-04: Atomic decrement-and-check via Lua script
-      const shouldComplete = await redis.eval(
-        DECR_AND_CHECK_LUA,
-        1,
-        `twmail:remaining:${campaignId}`,
-      ) as number;
-
-      if (shouldComplete === 1) {
-        const updatedCampaign = await db
+        // Increment campaign send counter (only on confirmed SES send)
+        await db
           .updateTable('campaigns')
-          .set({ status: CampaignStatus.SENT, send_completed_at: new Date() })
+          .set((eb: any) => ({ total_sent: eb('total_sent', '+', 1) }))
           .where('id', '=', campaignId)
-          .where('status', '=', CampaignStatus.SENDING)
-          .returningAll()
-          .executeTakeFirst();
+          .execute();
 
-        // BUG-06: Trigger resend-to-non-openers if enabled
-        if (updatedCampaign?.resend_enabled && updatedCampaign?.resend_config) {
-          const config = updatedCampaign.resend_config as { wait_hours?: number };
-          const waitHours = config.wait_hours ?? 72;
-          const resendQueue = new Queue('resend', { connection: redis as any });
-          await resendQueue.add('evaluate', { campaignId }, { delay: waitHours * 3600 * 1000 });
-          await resendQueue.close();
+        // BUG-04: Atomic decrement-and-check via Lua script
+        const shouldComplete = await redis.eval(
+          DECR_AND_CHECK_LUA,
+          1,
+          `twmail:remaining:${campaignId}`,
+        ) as number;
+
+        // Counter was decremented on the success path — skip the finally block decrement
+        shouldDecrementOnError = false;
+
+        if (shouldComplete === 1) {
+          const updatedCampaign = await db
+            .updateTable('campaigns')
+            .set({ status: CampaignStatus.SENT, send_completed_at: new Date() })
+            .where('id', '=', campaignId)
+            .where('status', '=', CampaignStatus.SENDING)
+            .returningAll()
+            .executeTakeFirst();
+
+          // BUG-06: Trigger resend-to-non-openers if enabled
+          if (updatedCampaign?.resend_enabled && updatedCampaign?.resend_config) {
+            const config = updatedCampaign.resend_config as { wait_hours?: number };
+            const waitHours = config.wait_hours ?? 72;
+            const resendQueue = new Queue('resend', { connection: redis as any });
+            await resendQueue.add('evaluate', { campaignId }, { delay: waitHours * 3600 * 1000 });
+            await resendQueue.close();
+          }
+        }
+
+        return { sent: true, messageId, sesMessageId };
+      } finally {
+        // DATA-07: If the success path did not decrement the counter (error occurred),
+        // decrement now so the campaign can still transition to SENT.
+        if (shouldDecrementOnError) {
+          try {
+            const shouldComplete = await redis.eval(
+              DECR_AND_CHECK_LUA, 1, `twmail:remaining:${campaignId}`
+            ) as number;
+            if (shouldComplete === 1) {
+              await db
+                .updateTable('campaigns')
+                .set({ status: CampaignStatus.SENT, send_completed_at: new Date() })
+                .where('id', '=', campaignId)
+                .where('status', '=', CampaignStatus.SENDING)
+                .execute();
+            }
+          } catch (finallyErr) {
+            console.error('Failed to decrement counter in finally block', {
+              err: finallyErr,
+              campaignId,
+              contactId,
+            });
+          }
         }
       }
-
-      return { sent: true, messageId, sesMessageId };
     },
     {
       connection: redis as any,
@@ -228,7 +261,13 @@ export function createBulkSendWorker(): Worker {
   );
 
   worker.on('failed', (job, err) => {
-    console.error(`Bulk send job ${job?.id} failed:`, err.message);
+    const data = job?.data;
+    console.error('Bulk send job failed', {
+      jobId: job?.id,
+      campaignId: data?.campaignId,
+      contactId: data?.contactId,
+      error: err.message,
+    });
   });
 
   worker.on('error', (err) => {
