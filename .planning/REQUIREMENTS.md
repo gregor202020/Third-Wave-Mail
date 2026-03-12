@@ -35,7 +35,7 @@ Requirements for production-ready launch. Each maps to roadmap phases.
 - [x] **DATA-04**: A/B test has minimum sample size guard before declaring winner
 - [x] **DATA-05**: Resend-to-non-openers excludes machine opens from "opened" definition
 - [ ] **DATA-06**: All .catch(() => {}) replaced with proper error logging
-- [ ] **DATA-07**: Campaign counters accurate (no silent drift from swallowed errors)
+- [x] **DATA-07**: Campaign counters accurate (no silent drift from swallowed errors)
 - [ ] **DATA-08**: Click tracking redirect preserves original URL including encoded params and UTMs
 - [ ] **DATA-09**: Click tracking queries SENT event link_map first, not events table scan
 - [ ] **DATA-10**: Segment query AND/OR precedence produces correct contact lists
@@ -144,7 +144,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DATA-04 | Phase 3 | Complete |
 | DATA-05 | Phase 3 | Complete |
 | DATA-06 | Phase 4 | Pending |
-| DATA-07 | Phase 4 | Pending |
+| DATA-07 | Phase 4 | Complete |
 | DATA-08 | Phase 5 | Pending |
 | DATA-09 | Phase 5 | Pending |
 | DATA-10 | Phase 5 | Pending |
