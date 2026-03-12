@@ -291,7 +291,7 @@ async function recordClick(
     .execute();
 }
 
-function detectMachineOpen(ip: string, userAgent: string): boolean {
+export function detectMachineOpen(ip: string, userAgent: string): boolean {
   // Apple Mail Privacy Protection
   for (const prefix of APPLE_PROXY_PREFIXES) {
     if (ip.startsWith(prefix)) return true;
