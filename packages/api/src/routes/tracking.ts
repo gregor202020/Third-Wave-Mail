@@ -11,6 +11,12 @@ const TRACKING_PIXEL = Buffer.from(
 // Apple proxy IP ranges for machine open detection
 const APPLE_PROXY_PREFIXES = ['17.'];
 
+// Known mail proxy user-agents for machine open detection
+const MACHINE_UA_PATTERNS: RegExp[] = [
+  /YahooMailProxy/i,
+  /Googleimageproxy/i,
+];
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
@@ -292,9 +298,13 @@ async function recordClick(
 }
 
 export function detectMachineOpen(ip: string, userAgent: string): boolean {
-  // Apple Mail Privacy Protection
+  // Primary: Apple Mail Privacy Protection (17.0.0.0/8)
   for (const prefix of APPLE_PROXY_PREFIXES) {
     if (ip.startsWith(prefix)) return true;
+  }
+  // Secondary: known mail proxy user-agents
+  for (const pattern of MACHINE_UA_PATTERNS) {
+    if (pattern.test(userAgent)) return true;
   }
   return false;
 }
