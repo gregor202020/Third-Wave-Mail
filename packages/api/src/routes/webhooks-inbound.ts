@@ -204,10 +204,10 @@ async function processNotification(
           },
         })
         .onConflict((oc: any) => oc.columns(['message_id', 'event_type']).doNothing())
-        .execute();
+        .executeTakeFirst();
 
       // Skip side effects if this was a duplicate (0 rows inserted)
-      if ((bounceInsert as any).numInsertedOrUpdatedRows === 0n) {
+      if ((bounceInsert as any)?.numInsertedOrUpdatedRows === 0n) {
         break;
       }
 
@@ -254,10 +254,10 @@ async function processNotification(
           },
         })
         .onConflict((oc: any) => oc.columns(['message_id', 'event_type']).doNothing())
-        .execute();
+        .executeTakeFirst();
 
       // Skip side effects if this was a duplicate (0 rows inserted)
-      if ((complaintInsert as any).numInsertedOrUpdatedRows === 0n) {
+      if ((complaintInsert as any)?.numInsertedOrUpdatedRows === 0n) {
         break;
       }
 
