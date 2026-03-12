@@ -136,7 +136,7 @@ export const webhooksInboundRoutes: FastifyPluginAsync = async (app) => {
     }
 
     // Process async to return 200 fast
-    processNotification(db, notificationType, messageBody).catch((err) => {
+    processNotification(db, notificationType as string, messageBody).catch((err) => {
       console.error('SES notification processing error:', err);
     });
 
