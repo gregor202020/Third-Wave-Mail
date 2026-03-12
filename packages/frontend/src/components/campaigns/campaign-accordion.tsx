@@ -1,6 +1,6 @@
 'use client';
 import { useState, useCallback, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
 import {
@@ -188,13 +188,16 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
   const segments = segmentsData?.data ?? [];
   const lists = listsData?.data ?? [];
 
+  const formDataRef = useRef(formData);
+  formDataRef.current = formData;
+
   const update = useCallback((changes: Partial<CampaignFormData>) => {
     setFormData((prev) => ({ ...prev, ...changes }));
   }, []);
 
   const handleBlurSave = useCallback(() => {
-    onSave(formData);
-  }, [formData, onSave]);
+    onSave(formDataRef.current);
+  }, [onSave]);
 
   const toggleSection = (idx: number) => {
     setOpenSection((prev) => (prev === idx ? -1 : idx));
@@ -205,7 +208,6 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
   const recipientsValid = !!(formData.segment_id || formData.list_id);
   const designValid = !!campaign.content_html;
   const schedulingValid = formData.schedule_type === 'now' || !!(formData.scheduled_date && formData.scheduled_time);
-  const trackingValid = true; // always valid, optional settings
   const abValid = !formData.ab_test_enabled || formData.ab_test_variants.every((v) => v.value);
   const resendValid = !formData.resend_enabled || !!formData.resend_delay;
 
@@ -216,7 +218,7 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
     { title: 'Recipients', icon: Users, valid: recipientsValid },
     { title: 'Design', icon: Palette, valid: designValid },
     { title: 'Scheduling', icon: Clock, valid: schedulingValid },
-    { title: 'Tracking', icon: BarChart, valid: trackingValid },
+    { title: 'Tracking', icon: BarChart, valid: true }, // always valid, optional settings
     { title: 'A/B Testing', icon: FlaskConical, valid: abValid },
     { title: 'Resend to Non-Openers', icon: RotateCcw, valid: resendValid },
     { title: 'Review & Send', icon: Rocket, valid: allValid },
@@ -273,8 +275,9 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
               <Select
                 value={formData.segment_id?.toString() ?? ''}
                 onValueChange={(val: string | null) => {
-                  update({ segment_id: val ? Number(val) : null, list_id: null });
-                  onSave({ ...formData, segment_id: val ? Number(val) : null, list_id: null });
+                  const changes = { segment_id: val ? Number(val) : null, list_id: null };
+                  update(changes);
+                  onSave(changes);
                 }}
               >
                 <SelectTrigger className="w-full">
@@ -293,8 +296,9 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
               <Select
                 value={formData.list_id?.toString() ?? ''}
                 onValueChange={(val: string | null) => {
-                  update({ list_id: val ? Number(val) : null, segment_id: null });
-                  onSave({ ...formData, list_id: val ? Number(val) : null, segment_id: null });
+                  const changes = { list_id: val ? Number(val) : null, segment_id: null };
+                  update(changes);
+                  onSave(changes);
                 }}
               >
                 <SelectTrigger className="w-full">
@@ -909,6 +913,7 @@ interface SaveAsTemplateDialogProps {
 }
 
 function SaveAsTemplateDialog({ open, onOpenChange, editorRef }: SaveAsTemplateDialogProps) {
+  const queryClient = useQueryClient();
   const [templateName, setTemplateName] = useState('');
   const [category, setCategory] = useState('');
   const [saving, setSaving] = useState(false);
@@ -925,6 +930,7 @@ function SaveAsTemplateDialog({ open, onOpenChange, editorRef }: SaveAsTemplateD
         content_html,
         content_json,
       });
+      queryClient.invalidateQueries({ queryKey: queryKeys.templates.all });
       toast.success('Template saved');
       setTemplateName('');
       setCategory('');
@@ -934,7 +940,7 @@ function SaveAsTemplateDialog({ open, onOpenChange, editorRef }: SaveAsTemplateD
     } finally {
       setSaving(false);
     }
-  }, [editorRef, templateName, category, onOpenChange]);
+  }, [editorRef, templateName, category, onOpenChange, queryClient]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
