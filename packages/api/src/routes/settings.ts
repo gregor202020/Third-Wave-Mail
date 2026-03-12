@@ -8,6 +8,7 @@ const updateSchema = z.object({
   default_sender_email: z.string().email().optional(),
   default_sender_name: z.string().max(255).optional(),
   timezone: z.string().max(100).optional(),
+  physical_address: z.string().max(500).optional(),
 });
 
 export const settingsRoutes: FastifyPluginAsync = async (app) => {

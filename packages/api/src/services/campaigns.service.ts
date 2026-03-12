@@ -170,6 +170,12 @@ export async function sendCampaign(id: number): Promise<Campaign> {
     throw new AppError(400, ErrorCode.VALIDATION_ERROR, 'Campaign must target a segment or list');
   }
 
+  // COMP-06: Physical mailing address required (CAN-SPAM, CASL)
+  const settings = await db.selectFrom('settings').select('physical_address').where('id', '=', 1).executeTakeFirst();
+  if (!settings?.physical_address?.trim()) {
+    throw new AppError(400, ErrorCode.VALIDATION_ERROR, 'A physical mailing address must be configured in Settings before sending campaigns');
+  }
+
   // Update status to sending
   const result = await db
     .updateTable('campaigns')

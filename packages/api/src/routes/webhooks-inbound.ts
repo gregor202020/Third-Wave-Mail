@@ -187,8 +187,10 @@ async function processNotification(
       const isHard = bounceType === 'Permanent';
       const eventType = isHard ? EventType.HARD_BOUNCE : EventType.SOFT_BOUNCE;
 
-      const bounceOps: Promise<unknown>[] = [
-        db.insertInto('events').values({
+      // COMP-01: Idempotent insert — ON CONFLICT DO NOTHING prevents duplicate events
+      const bounceInsert = await db
+        .insertInto('events')
+        .values({
           event_type: eventType,
           contact_id: message.contact_id,
           campaign_id: message.campaign_id,
@@ -200,7 +202,16 @@ async function processNotification(
             diagnostic: (bounce?.['bouncedRecipients'] as any)?.[0]?.diagnosticCode,
             sub_type: bounce?.['bounceSubType'],
           },
-        }).execute(),
+        })
+        .onConflict((oc: any) => oc.columns(['message_id', 'event_type']).doNothing())
+        .execute();
+
+      // Skip side effects if this was a duplicate (0 rows inserted)
+      if ((bounceInsert as any).numInsertedOrUpdatedRows === 0n) {
+        break;
+      }
+
+      const bounceOps: Promise<unknown>[] = [
         db.updateTable('messages')
           .set({ status: MessageStatus.BOUNCED })
           .where('id', '=', message.id)
@@ -227,8 +238,10 @@ async function processNotification(
     case 'Complaint': {
       const complaint = data['complaint'] as Record<string, unknown>;
 
-      await Promise.all([
-        db.insertInto('events').values({
+      // COMP-01: Idempotent insert — ON CONFLICT DO NOTHING prevents duplicate events
+      const complaintInsert = await db
+        .insertInto('events')
+        .values({
           event_type: EventType.COMPLAINT,
           contact_id: message.contact_id,
           campaign_id: message.campaign_id,
@@ -239,7 +252,16 @@ async function processNotification(
             feedback_type: complaint?.['complaintFeedbackType'],
             complaint_timestamp: complaint?.['timestamp'],
           },
-        }).execute(),
+        })
+        .onConflict((oc: any) => oc.columns(['message_id', 'event_type']).doNothing())
+        .execute();
+
+      // Skip side effects if this was a duplicate (0 rows inserted)
+      if ((complaintInsert as any).numInsertedOrUpdatedRows === 0n) {
+        break;
+      }
+
+      await Promise.all([
         db.updateTable('messages')
           .set({ status: MessageStatus.COMPLAINED })
           .where('id', '=', message.id)
