@@ -35,7 +35,11 @@ Third Wave Mail is a feature-complete email marketing platform undergoing a prod
   3. A/B holdback contact IDs survive a Redis restart (persisted in PostgreSQL)
   4. Campaign completion counter uses an atomic Lua script and never triggers prematurely on Redis restart
   5. A scheduled campaign transitions from SCHEDULED to SENDING at the correct time
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 01-01-PLAN.md — Install BullMQ in API, replace redis.lpush with Queue.add(), create dedup/holdback migration
+- [ ] 01-02-PLAN.md — Fix worker-side bugs: dedup check, atomic Lua counter, holdback persistence, resend trigger
+- [ ] 01-03-PLAN.md — Build scheduled campaign trigger (polling loop in workers)
 
 ### Phase 2: Compliance
 **Goal**: Every send is legally compliant and suppressed contacts stay suppressed
@@ -161,7 +165,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Critical Bug Fixes | 0/TBD | Not started | - |
+| 1. Critical Bug Fixes | 0/3 | Planning complete | - |
 | 2. Compliance | 0/TBD | Not started | - |
 | 3. Data Integrity — Analytics | 0/TBD | Not started | - |
 | 4. Data Integrity — Error Handling | 0/TBD | Not started | - |
