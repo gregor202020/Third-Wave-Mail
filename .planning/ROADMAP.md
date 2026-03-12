@@ -67,7 +67,10 @@ Plans:
   3. A/B test winner selection uses only human open and click counts, not MPP-inflated totals
   4. An A/B test will not declare a winner until a statistically meaningful sample size is reached
   5. Resend-to-non-openers sends only to contacts with zero human opens (machine opens do not count as opened)
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 03-01-PLAN.md — MPP detection enhancement + variant open/click behavior tests
+- [ ] 03-02-PLAN.md — Variant counter fix + A/B eval sample size guard + win probability threshold
 
 ### Phase 4: Data Integrity — Error Handling
 **Goal**: No error in the send pipeline is silently swallowed
@@ -76,7 +79,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Every .catch() in service and worker code logs the error with context rather than discarding it
   2. Campaign sent/failed/skipped counters remain accurate after any error condition during bulk send
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 03-01-PLAN.md — MPP detection enhancement + variant open/click behavior tests
+- [ ] 03-02-PLAN.md — Variant counter fix + A/B eval sample size guard + win probability threshold
 
 ### Phase 5: Data Integrity — Tracking & Segments
 **Goal**: Click tracking redirects correctly and segments produce accurate contact lists
@@ -87,7 +93,10 @@ Plans:
   2. The click tracking redirect resolves the original URL from the SENT event link_map without scanning the events table
   3. A segment with mixed AND/OR rules returns the same contacts as the equivalent SQL query
   4. The contact count shown in segment preview matches the actual number of contacts a send reaches
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 03-01-PLAN.md — MPP detection enhancement + variant open/click behavior tests
+- [ ] 03-02-PLAN.md — Variant counter fix + A/B eval sample size guard + win probability threshold
 
 ### Phase 6: Infrastructure & Security
 **Goal**: Production infrastructure is hardened against data loss, misconfiguration, and credential exposure
@@ -99,7 +108,10 @@ Plans:
   3. The API and all worker processes shut down cleanly on SIGTERM without dropping in-flight jobs
   4. GET /health returns 200 without authentication and confirms both database and Redis connectivity
   5. Redis job data survives a Redis restart (AOF persistence with everysec fsync enabled)
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 03-01-PLAN.md — MPP detection enhancement + variant open/click behavior tests
+- [ ] 03-02-PLAN.md — Variant counter fix + A/B eval sample size guard + win probability threshold
 
 ### Phase 7: Code Quality — Tooling
 **Goal**: Automated enforcement prevents the same class of bugs from re-entering the codebase
@@ -110,7 +122,10 @@ Plans:
   2. Running vitest produces passing tests for SNS handler idempotency, bulk-send deduplication, and segment query logic
   3. Attempting to commit code that fails lint or type checks is blocked by the pre-commit hook
   4. Prettier formatting is enforced consistently and does not conflict with ESLint rules
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 03-01-PLAN.md — MPP detection enhancement + variant open/click behavior tests
+- [ ] 03-02-PLAN.md — Variant counter fix + A/B eval sample size guard + win probability threshold
 
 ### Phase 8: Code Quality — Strictness
 **Goal**: TypeScript strict mode is clean and all API routes return a consistent error shape
@@ -119,7 +134,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. All packages compile with strict: true and no suppressed type errors in service or worker code
   2. Every API error response conforms to { error: { code, message } } — no route returns a different shape
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 03-01-PLAN.md — MPP detection enhancement + variant open/click behavior tests
+- [ ] 03-02-PLAN.md — Variant counter fix + A/B eval sample size guard + win probability threshold
 
 ### Phase 9: Operational Readiness
 **Goal**: The system recovers from failures and respects operational constraints
@@ -131,7 +149,10 @@ Plans:
   3. A campaign scheduled in a non-UTC timezone sends at the correct local time after UTC storage and conversion
   4. Webhook HMAC signatures use a constant-time comparison that does not leak timing information
   5. A webhook endpoint that has failed 50 consecutive times is automatically disabled
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 03-01-PLAN.md — MPP detection enhancement + variant open/click behavior tests
+- [ ] 03-02-PLAN.md — Variant counter fix + A/B eval sample size guard + win probability threshold
 
 ### Phase 10: Email Output
 **Goal**: Every email rendered by the platform is valid HTML and contains only absolute URLs
@@ -140,7 +161,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Every combination of GrapeJS editor blocks produces valid MJML output that renders without errors
   2. Every image src and link href in a sent email is an absolute URL (no relative paths)
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 03-01-PLAN.md — MPP detection enhancement + variant open/click behavior tests
+- [ ] 03-02-PLAN.md — Variant counter fix + A/B eval sample size guard + win probability threshold
 
 ### Phase 11: Observability
 **Goal**: Errors and system behavior are visible in production without exposing user PII in logs
@@ -150,7 +174,10 @@ Plans:
   1. An unhandled exception in the API, any worker, or the frontend creates a Sentry event with full context
   2. Production log output is structured JSON with email addresses and JWT tokens redacted
   3. pino-pretty is absent from all production bundles and docker images
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 03-01-PLAN.md — MPP detection enhancement + variant open/click behavior tests
+- [ ] 03-02-PLAN.md — Variant counter fix + A/B eval sample size guard + win probability threshold
 
 ### Phase 12: Production Launch
 **Goal**: The deployment is ready for live traffic with verified email deliverability and uptime monitoring
@@ -159,7 +186,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. SES domain has verified SPF, DKIM, and DMARC records with at minimum p=quarantine policy
   2. An external uptime monitor is watching the /health endpoint and will alert on any outage
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 03-01-PLAN.md — MPP detection enhancement + variant open/click behavior tests
+- [ ] 03-02-PLAN.md — Variant counter fix + A/B eval sample size guard + win probability threshold
 
 ## Progress
 
@@ -170,7 +200,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 |-------|----------------|--------|-----------|
 | 1. Critical Bug Fixes | 3/3 | Complete | 2026-03-13 |
 | 2. Compliance | 2/2 | Complete   | 2026-03-12 |
-| 3. Data Integrity — Analytics | 0/TBD | Not started | - |
+| 3. Data Integrity — Analytics | 0/2 | Not started | - |
 | 4. Data Integrity — Error Handling | 0/TBD | Not started | - |
 | 5. Data Integrity — Tracking & Segments | 0/TBD | Not started | - |
 | 6. Infrastructure & Security | 0/TBD | Not started | - |
