@@ -15,19 +15,24 @@ export function formatPercent(n: number): string {
   return `${n.toFixed(1)}%`;
 }
 
-export function formatDate(date: string | Date | null | undefined): string {
-  if (!date) return '--';
+function toSafeDate(date: string | Date | null | undefined): Date | null {
+  if (!date) return null;
   const d = new Date(date);
-  if (isNaN(d.getTime())) return '--';
+  if (isNaN(d.getTime())) return null;
+  return d;
+}
+
+export function formatDate(date: string | Date | null | undefined): string {
+  const d = toSafeDate(date);
+  if (!d) return '--';
   return new Intl.DateTimeFormat('en-AU', {
     day: 'numeric', month: 'short', year: 'numeric',
   }).format(d);
 }
 
 export function formatDateTime(date: string | Date | null | undefined): string {
-  if (!date) return '--';
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return '--';
+  const d = toSafeDate(date);
+  if (!d) return '--';
   return new Intl.DateTimeFormat('en-AU', {
     day: 'numeric', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
@@ -35,9 +40,8 @@ export function formatDateTime(date: string | Date | null | undefined): string {
 }
 
 export function timeAgo(date: string | Date | null | undefined): string {
-  if (!date) return '--';
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return '--';
+  const d = toSafeDate(date);
+  if (!d) return '--';
   const seconds = Math.floor((Date.now() - d.getTime()) / 1000);
   if (seconds < 60) return 'just now';
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;

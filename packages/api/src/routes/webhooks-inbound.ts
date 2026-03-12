@@ -6,8 +6,10 @@ import { getDb, ContactStatus, EventType, MessageStatus } from '@twmail/shared';
 const NOTIFICATION_SIGNING_FIELDS = ['Message', 'MessageId', 'Subject', 'Timestamp', 'TopicArn', 'Type'];
 const SUBSCRIPTION_SIGNING_FIELDS = ['Message', 'MessageId', 'SubscribeURL', 'Timestamp', 'Token', 'TopicArn', 'Type'];
 
-// Cache for downloaded signing certificates
-const certCache = new Map<string, string>();
+// Cache for downloaded signing certificates (with TTL and max size)
+const CERT_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const CERT_CACHE_MAX_SIZE = 20;
+const certCache = new Map<string, { pem: string; fetchedAt: number }>();
 
 /**
  * Validate that the SigningCertURL is from a legitimate AWS SNS endpoint.
@@ -55,13 +57,22 @@ async function verifySnsSignature(message: Record<string, unknown>): Promise<boo
   }
 
   // Download and cache the signing certificate
-  let pem = certCache.get(certUrl);
-  if (!pem) {
+  const cached = certCache.get(certUrl);
+  let pem: string | undefined;
+  if (cached && (Date.now() - cached.fetchedAt) < CERT_CACHE_TTL_MS) {
+    pem = cached.pem;
+  } else {
+    certCache.delete(certUrl);
     try {
       const res = await fetch(certUrl);
       if (!res.ok) return false;
       pem = await res.text();
-      certCache.set(certUrl, pem);
+      // Evict oldest entries if cache is at capacity
+      if (certCache.size >= CERT_CACHE_MAX_SIZE) {
+        const oldestKey = certCache.keys().next().value!;
+        certCache.delete(oldestKey);
+      }
+      certCache.set(certUrl, { pem, fetchedAt: Date.now() });
     } catch {
       return false;
     }
@@ -129,7 +140,7 @@ export const webhooksInboundRoutes: FastifyPluginAsync = async (app) => {
       messageBody = body['Message'] as Record<string, unknown>;
     }
 
-    const notificationType = messageBody?.notificationType ?? messageBody?.eventType;
+    const notificationType = (messageBody?.notificationType ?? messageBody?.eventType) as string | undefined;
 
     if (!notificationType) {
       return reply.status(200).send();
@@ -176,99 +187,94 @@ async function processNotification(
       const isHard = bounceType === 'Permanent';
       const eventType = isHard ? EventType.HARD_BOUNCE : EventType.SOFT_BOUNCE;
 
-      await db.insertInto('events').values({
-        event_type: eventType,
-        contact_id: message.contact_id,
-        campaign_id: message.campaign_id,
-        variant_id: message.variant_id,
-        message_id: message.id,
-        event_time: new Date(),
-        metadata: {
-          bounce_type: bounceType,
-          diagnostic: (bounce?.['bouncedRecipients'] as any)?.[0]?.diagnosticCode,
-          sub_type: bounce?.['bounceSubType'],
-        },
-      }).execute();
+      const bounceOps: Promise<unknown>[] = [
+        db.insertInto('events').values({
+          event_type: eventType,
+          contact_id: message.contact_id,
+          campaign_id: message.campaign_id,
+          variant_id: message.variant_id,
+          message_id: message.id,
+          event_time: new Date(),
+          metadata: {
+            bounce_type: bounceType,
+            diagnostic: (bounce?.['bouncedRecipients'] as any)?.[0]?.diagnosticCode,
+            sub_type: bounce?.['bounceSubType'],
+          },
+        }).execute(),
+        db.updateTable('messages')
+          .set({ status: MessageStatus.BOUNCED })
+          .where('id', '=', message.id)
+          .execute(),
+        db.updateTable('campaigns')
+          .set((eb: any) => ({ total_bounces: eb('total_bounces', '+', 1) }))
+          .where('id', '=', message.campaign_id)
+          .execute(),
+      ];
 
-      // Update message status
-      await db.updateTable('messages')
-        .set({ status: MessageStatus.BOUNCED })
-        .where('id', '=', message.id)
-        .execute();
-
-      // Update campaign bounce counter
-      await db.updateTable('campaigns')
-        .set((eb: any) => ({ total_bounces: eb('total_bounces', '+', 1) }))
-        .where('id', '=', message.campaign_id)
-        .execute();
-
-      // Hard bounce: update contact status
       if (isHard) {
-        await db.updateTable('contacts')
-          .set({ status: ContactStatus.BOUNCED })
-          .where('id', '=', message.contact_id)
-          .execute();
+        bounceOps.push(
+          db.updateTable('contacts')
+            .set({ status: ContactStatus.BOUNCED })
+            .where('id', '=', message.contact_id)
+            .execute(),
+        );
       }
+
+      await Promise.all(bounceOps);
       break;
     }
 
     case 'Complaint': {
       const complaint = data['complaint'] as Record<string, unknown>;
 
-      await db.insertInto('events').values({
-        event_type: EventType.COMPLAINT,
-        contact_id: message.contact_id,
-        campaign_id: message.campaign_id,
-        variant_id: message.variant_id,
-        message_id: message.id,
-        event_time: new Date(),
-        metadata: {
-          feedback_type: complaint?.['complaintFeedbackType'],
-          complaint_timestamp: complaint?.['timestamp'],
-        },
-      }).execute();
-
-      // Update message status
-      await db.updateTable('messages')
-        .set({ status: MessageStatus.COMPLAINED })
-        .where('id', '=', message.id)
-        .execute();
-
-      // Update contact status
-      await db.updateTable('contacts')
-        .set({ status: ContactStatus.COMPLAINED })
-        .where('id', '=', message.contact_id)
-        .execute();
-
-      // Update campaign complaint counter
-      await db.updateTable('campaigns')
-        .set((eb: any) => ({ total_complaints: eb('total_complaints', '+', 1) }))
-        .where('id', '=', message.campaign_id)
-        .execute();
+      await Promise.all([
+        db.insertInto('events').values({
+          event_type: EventType.COMPLAINT,
+          contact_id: message.contact_id,
+          campaign_id: message.campaign_id,
+          variant_id: message.variant_id,
+          message_id: message.id,
+          event_time: new Date(),
+          metadata: {
+            feedback_type: complaint?.['complaintFeedbackType'],
+            complaint_timestamp: complaint?.['timestamp'],
+          },
+        }).execute(),
+        db.updateTable('messages')
+          .set({ status: MessageStatus.COMPLAINED })
+          .where('id', '=', message.id)
+          .execute(),
+        db.updateTable('contacts')
+          .set({ status: ContactStatus.COMPLAINED })
+          .where('id', '=', message.contact_id)
+          .execute(),
+        db.updateTable('campaigns')
+          .set((eb: any) => ({ total_complaints: eb('total_complaints', '+', 1) }))
+          .where('id', '=', message.campaign_id)
+          .execute(),
+      ]);
       break;
     }
 
     case 'Delivery': {
-      await db.insertInto('events').values({
-        event_type: EventType.DELIVERED,
-        contact_id: message.contact_id,
-        campaign_id: message.campaign_id,
-        variant_id: message.variant_id,
-        message_id: message.id,
-        event_time: new Date(),
-      }).execute();
-
-      // Update message
-      await db.updateTable('messages')
-        .set({ status: MessageStatus.DELIVERED, delivered_at: new Date() })
-        .where('id', '=', message.id)
-        .execute();
-
-      // Update campaign delivered counter
-      await db.updateTable('campaigns')
-        .set((eb: any) => ({ total_delivered: eb('total_delivered', '+', 1) }))
-        .where('id', '=', message.campaign_id)
-        .execute();
+      await Promise.all([
+        db.insertInto('events').values({
+          event_type: EventType.DELIVERED,
+          contact_id: message.contact_id,
+          campaign_id: message.campaign_id,
+          variant_id: message.variant_id,
+          message_id: message.id,
+          event_time: new Date(),
+        }).execute(),
+        db.updateTable('messages')
+          .set({ status: MessageStatus.DELIVERED, delivered_at: new Date() })
+          .where('id', '=', message.id)
+          .execute(),
+        db.updateTable('campaigns')
+          .set((eb: any) => ({ total_delivered: eb('total_delivered', '+', 1) }))
+          .where('id', '=', message.campaign_id)
+          .execute(),
+      ]);
       break;
     }
 

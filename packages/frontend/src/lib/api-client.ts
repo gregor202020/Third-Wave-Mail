@@ -18,6 +18,24 @@ class ApiError extends Error {
   }
 }
 
+async function parseResponse<T>(res: Response, fallbackMsg: string): Promise<T> {
+  if (res.status === 204) return undefined as T;
+  let json: Record<string, unknown>;
+  try {
+    json = await res.json();
+  } catch {
+    if (!res.ok) {
+      throw new ApiError(res.status, 'UNKNOWN', `${fallbackMsg} with status ${res.status}`);
+    }
+    return undefined as T;
+  }
+  if (!res.ok) {
+    const error = (json.error || {}) as Record<string, unknown>;
+    throw new ApiError(res.status, (error.code as string) || 'UNKNOWN', (error.message as string) || fallbackMsg, error.details as Array<{ field: string; message: string }>);
+  }
+  return json as T;
+}
+
 async function apiClient<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, headers = {} } = options;
   const config: RequestInit = {
@@ -39,21 +57,7 @@ async function apiClient<T>(endpoint: string, options: RequestOptions = {}): Pro
     window.location.href = '/login';
     return undefined as T;
   }
-  if (res.status === 204) return undefined as T;
-  let json: Record<string, unknown>;
-  try {
-    json = await res.json();
-  } catch {
-    if (!res.ok) {
-      throw new ApiError(res.status, 'UNKNOWN', `Request failed with status ${res.status}`);
-    }
-    return undefined as T;
-  }
-  if (!res.ok) {
-    const error = (json.error || {}) as Record<string, unknown>;
-    throw new ApiError(res.status, (error.code as string) || 'UNKNOWN', (error.message as string) || 'An error occurred', error.details as Array<{ field: string; message: string }>);
-  }
-  return json as T;
+  return parseResponse<T>(res, 'Request failed');
 }
 
 export const api = {
@@ -65,21 +69,7 @@ export const api = {
     const res = await fetch(`/api/proxy${endpoint}`, {
       method: 'POST', body: formData, credentials: 'include',
     });
-    if (res.status === 204) return undefined as T;
-    let json: Record<string, unknown>;
-    try {
-      json = await res.json();
-    } catch {
-      if (!res.ok) {
-        throw new ApiError(res.status, 'UNKNOWN', `Upload failed with status ${res.status}`);
-      }
-      return undefined as T;
-    }
-    if (!res.ok) {
-      const error = (json.error || {}) as Record<string, unknown>;
-      throw new ApiError(res.status, (error.code as string) || 'UNKNOWN', (error.message as string) || 'Upload failed', error.details as Array<{ field: string; message: string }>);
-    }
-    return json as T;
+    return parseResponse<T>(res, 'Upload failed');
   },
 };
 

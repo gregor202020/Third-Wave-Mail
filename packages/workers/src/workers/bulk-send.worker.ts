@@ -1,4 +1,4 @@
-import { Worker, type Job } from 'bullmq';
+import { Worker, Queue, type Job } from 'bullmq';
 import { getDb, getRedis, CampaignStatus, ContactStatus, MessageStatus, EventType } from '@twmail/shared';
 import type { Contact, Campaign } from '@twmail/shared';
 import { sendEmail } from '../ses-client.js';
@@ -162,16 +162,11 @@ export function createBulkSendWorker(): Worker {
         .where('id', '=', campaignId)
         .execute();
 
-      // Check if all queued messages for this campaign have been sent.
-      // If no more QUEUED messages remain, transition campaign from SENDING → SENT.
-      const remaining = await db
-        .selectFrom('messages')
-        .select(db.fn.countAll<number>().as('count'))
-        .where('campaign_id', '=', campaignId)
-        .where('status', '=', MessageStatus.QUEUED)
-        .executeTakeFirstOrThrow();
+      // Decrement Redis counter and transition campaign when all sends complete
+      const remainingCount = await redis.decr(`twmail:remaining:${campaignId}`);
 
-      if (Number(remaining.count) === 0) {
+      if (remainingCount <= 0) {
+        await redis.del(`twmail:remaining:${campaignId}`);
         await db
           .updateTable('campaigns')
           .set({ status: CampaignStatus.SENT, send_completed_at: new Date() })
@@ -212,7 +207,6 @@ export function createCampaignSendWorker(): Worker {
     async (job: Job<CampaignSendJobData>) => {
       const { campaignId } = job.data;
       const db = getDb();
-      const { Queue } = await import('bullmq');
 
       const campaign = await db
         .selectFrom('campaigns')
@@ -257,6 +251,9 @@ export function createCampaignSendWorker(): Worker {
           .execute();
         return { sent: 0 };
       }
+
+      // Set Redis counter for campaign completion tracking
+      await redis.set(`twmail:remaining:${campaignId}`, contactIds.length);
 
       // Handle A/B test variant assignment
       const bulkSendQueue = new Queue('bulk-send', { connection: redis as any });

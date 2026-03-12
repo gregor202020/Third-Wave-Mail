@@ -1,4 +1,4 @@
-import { Worker, type Job } from 'bullmq';
+import { Worker, Queue, type Job } from 'bullmq';
 import { getDb, getRedis, WebhookDeliveryStatus } from '@twmail/shared';
 import { createHmac } from 'crypto';
 
@@ -23,6 +23,7 @@ const BACKOFF_DELAYS_MS = [
 
 export function createWebhookWorker(): Worker {
   const redis = getRedis();
+  const webhookQueue = new Queue('webhook', { connection: redis as any });
 
   const worker = new Worker<WebhookJobData>(
     'webhook',
@@ -139,8 +140,6 @@ export function createWebhookWorker(): Worker {
         }
 
         // Re-enqueue with exponential backoff delay
-        const { Queue } = await import('bullmq');
-        const webhookQueue = new Queue('webhook', { connection: redis as any });
         const delayMs = BACKOFF_DELAYS_MS[attempt - 1] ?? BACKOFF_DELAYS_MS[BACKOFF_DELAYS_MS.length - 1]!;
         const nextRetryAt = new Date(Date.now() + delayMs);
 
@@ -155,7 +154,6 @@ export function createWebhookWorker(): Worker {
           { deliveryId, endpointId, url, secret, eventType, payload, attempt: attempt + 1 },
           { delay: delayMs },
         );
-        await webhookQueue.close();
 
         return { retrying: true, attempt, nextDelayMs: delayMs };
       }
