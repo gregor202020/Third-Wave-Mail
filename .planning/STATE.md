@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-02-PLAN.md (import suppression guard + compliance verification)
-last_updated: "2026-03-12T22:52:21.547Z"
+stopped_at: Completed 02-compliance-02-01-PLAN.md
+last_updated: "2026-03-12T22:53:28.984Z"
 last_activity: 2026-03-13 — Plan 02-02 complete (import suppression guard + compliance verification)
 progress:
   total_phases: 12
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
   percent: 60
 ---
 
@@ -51,6 +51,7 @@ Progress: [██████░░░░] 60%
 
 *Updated after each plan completion*
 | Phase 02-compliance P02 | 15 | 2 tasks | 1 files |
+| Phase 02-compliance P01 | 173 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,8 @@ Recent decisions affecting current work:
 - [02-02] Suppression guard in import worker runs before updateExisting check — suppressed contacts skipped unconditionally
 - [02-02] isSuppressed continue skips both update AND list-add — no separate list-membership guard needed
 - [02-02] COMP-02/03/04/05/08 verified by code trace — all already correctly implemented
+- [Phase 02-compliance]: physical_address stored as NOT NULL DEFAULT '' — empty string means not configured, avoids nullable column complexity
+- [Phase 02-compliance]: SNS idempotency via partial unique index + ON CONFLICT DO NOTHING with numInsertedOrUpdatedRows guard to prevent counter drift
 
 ### Pending Todos
 
@@ -77,6 +80,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13
-Stopped at: Completed 02-02-PLAN.md (import suppression guard + compliance verification)
+Last session: 2026-03-12T22:53:28.982Z
+Stopped at: Completed 02-compliance-02-01-PLAN.md
 Resume file: None

@@ -11,7 +11,7 @@ Third Wave Mail is a feature-complete email marketing platform undergoing a prod
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Critical Bug Fixes** - Fix the bugs that prevent campaigns from sending or cause duplicate sends
-- [ ] **Phase 2: Compliance** - Ensure all bounce, complaint, unsubscribe, and import flows meet legal requirements
+- [x] **Phase 2: Compliance** - Ensure all bounce, complaint, unsubscribe, and import flows meet legal requirements (completed 2026-03-12)
 - [ ] **Phase 3: Data Integrity — Analytics** - Correct MPP machine-open detection and A/B test logic
 - [ ] **Phase 4: Data Integrity — Error Handling** - Replace all swallowed errors with proper logging
 - [ ] **Phase 5: Data Integrity — Tracking & Segments** - Fix click tracking, segment logic, and count accuracy
@@ -52,7 +52,7 @@ Plans:
   4. A server-to-server POST to the unsubscribe endpoint succeeds without session or CSRF token
   5. Importing a CSV cannot re-subscribe a previously bounced, complained, or unsubscribed contact
   6. A campaign cannot be sent without a physical mailing address, regardless of template content
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 02-01-PLAN.md — SNS bounce/complaint idempotency + physical mailing address enforcement
 - [ ] 02-02-PLAN.md — Import suppression guard + verify already-complete compliance items
@@ -169,7 +169,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Critical Bug Fixes | 3/3 | Complete | 2026-03-13 |
-| 2. Compliance | 1/2 | In Progress|  |
+| 2. Compliance | 2/2 | Complete   | 2026-03-12 |
 | 3. Data Integrity — Analytics | 0/TBD | Not started | - |
 | 4. Data Integrity — Error Handling | 0/TBD | Not started | - |
 | 5. Data Integrity — Tracking & Segments | 0/TBD | Not started | - |
