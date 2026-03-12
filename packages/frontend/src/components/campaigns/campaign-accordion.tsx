@@ -178,11 +178,13 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
   const { data: segmentsData } = useQuery({
     queryKey: queryKeys.segments.list(),
     queryFn: () => api.get<{ data: Segment[] }>('/segments'),
+    enabled: openSection === 1,
   });
 
   const { data: listsData } = useQuery({
     queryKey: queryKeys.lists.list(),
     queryFn: () => api.get<{ data: List[] }>('/lists'),
+    enabled: openSection === 1,
   });
 
   const segments = segmentsData?.data ?? [];

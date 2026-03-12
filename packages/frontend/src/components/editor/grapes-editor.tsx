@@ -2,6 +2,7 @@
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState,
@@ -93,14 +94,22 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
       [initialContent]
     );
 
+    const debounceRef = useRef<ReturnType<typeof setTimeout>>();
     const handleUpdate = useCallback(() => {
-      if (!editorRef.current || !onChange) return;
-      const html =
-        editorRef.current.getHtml() +
-        `<style>${editorRef.current.getCss()}</style>`;
-      const json = JSON.stringify(editorRef.current.getProjectData());
-      onChange(html, json);
+      clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        if (!editorRef.current || !onChange) return;
+        const html =
+          editorRef.current.getHtml() +
+          `<style>${editorRef.current.getCss()}</style>`;
+        const json = JSON.stringify(editorRef.current.getProjectData());
+        onChange(html, json);
+      }, 500);
     }, [onChange]);
+
+    useEffect(() => {
+      return () => clearTimeout(debounceRef.current);
+    }, []);
 
     const toggleViewport = useCallback(
       (mode: 'desktop' | 'mobile') => {

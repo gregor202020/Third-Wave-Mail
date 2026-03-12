@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -38,10 +38,12 @@ export default function TemplateEditorPage() {
   });
 
   // Set name once loaded
-  if (template && !nameLoaded) {
-    setName(template.name);
-    setNameLoaded(true);
-  }
+  useEffect(() => {
+    if (template && !nameLoaded) {
+      setName(template.name);
+      setNameLoaded(true);
+    }
+  }, [template, nameLoaded]);
 
   const saveMutation = useMutation({
     mutationFn: (payload: {
