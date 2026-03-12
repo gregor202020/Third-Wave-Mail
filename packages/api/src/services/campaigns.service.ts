@@ -1,4 +1,5 @@
 import { getDb, getRedis, ErrorCode, CampaignStatus, ContactStatus } from '@twmail/shared';
+import { Queue } from 'bullmq';
 import type {
   PaginationParams,
   PaginatedResponse,
@@ -179,10 +180,9 @@ export async function sendCampaign(id: number): Promise<Campaign> {
 
   // Enqueue the campaign for sending via BullMQ
   const redis = getRedis();
-  await redis.lpush(
-    'twmail:campaign-send',
-    JSON.stringify({ campaignId: id }),
-  );
+  const campaignSendQueue = new Queue('campaign-send', { connection: redis.duplicate() });
+  await campaignSendQueue.add('send', { campaignId: id });
+  await campaignSendQueue.close();
 
   return result;
 }
