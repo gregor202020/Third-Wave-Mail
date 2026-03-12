@@ -56,10 +56,15 @@ export function createAbEvalWorker(): Worker {
         .where('id', '=', winner.id)
         .execute();
 
-      // Send to holdback contacts
-      const holdbackJson = await redis.get(`twmail:ab-holdback:${campaignId}`);
-      if (holdbackJson) {
-        const holdbackContactIds: number[] = JSON.parse(holdbackJson);
+      // BUG-03: Read holdback from PostgreSQL (persisted by campaign-send orchestrator)
+      const holdbackRows = await db
+        .selectFrom('campaign_holdback_contacts')
+        .select('contact_id')
+        .where('campaign_id', '=', campaignId)
+        .execute();
+      const holdbackContactIds = holdbackRows.map(r => r.contact_id);
+
+      if (holdbackContactIds.length > 0) {
         const bulkSendQueue = new Queue('bulk-send', { connection: redis as any });
 
         for (const contactId of holdbackContactIds) {
@@ -71,7 +76,12 @@ export function createAbEvalWorker(): Worker {
         }
 
         await bulkSendQueue.close();
-        await redis.del(`twmail:ab-holdback:${campaignId}`);
+
+        // Clean up holdback records after winner contacts are queued
+        await db
+          .deleteFrom('campaign_holdback_contacts')
+          .where('campaign_id', '=', campaignId)
+          .execute();
       }
 
       return { winnerId: winner.id, winProbability: maxProb };

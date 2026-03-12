@@ -5,6 +5,18 @@ import { sendEmail } from '../ses-client.js';
 import { processMergeTags } from '../merge-tags.js';
 import { injectTrackingPixel, rewriteLinks, getUnsubscribeHeaders } from '../tracking.js';
 
+// BUG-04: Atomic decrement-and-check via Lua script
+// Only one concurrent worker will receive shouldComplete === 1
+const DECR_AND_CHECK_LUA = `
+  local key = KEYS[1]
+  local current = redis.call('DECR', key)
+  if current <= 0 then
+    redis.call('DEL', key)
+    return 1
+  end
+  return 0
+`;
+
 export interface BulkSendJobData {
   contactId: number;
   campaignId: number;
@@ -76,6 +88,21 @@ export function createBulkSendWorker(): Worker {
 
       if (!html || !subject) {
         return { skipped: true, reason: 'missing_content' };
+      }
+
+      // BUG-02: Idempotency check — skip if already sent for this campaign/contact
+      const existingMessage = await db
+        .selectFrom('messages')
+        .select(['id', 'ses_message_id', 'status'])
+        .where('campaign_id', '=', campaignId)
+        .where('contact_id', '=', contactId)
+        .executeTakeFirst();
+
+      if (existingMessage) {
+        // Already sent or in progress — skip this retry
+        // Still decrement the counter so campaign completion isn't blocked
+        await redis.eval(DECR_AND_CHECK_LUA, 1, `twmail:remaining:${campaignId}`);
+        return { skipped: true, reason: 'already_sent', messageId: existingMessage.id };
       }
 
       // Create message record
@@ -162,17 +189,30 @@ export function createBulkSendWorker(): Worker {
         .where('id', '=', campaignId)
         .execute();
 
-      // Decrement Redis counter and transition campaign when all sends complete
-      const remainingCount = await redis.decr(`twmail:remaining:${campaignId}`);
+      // BUG-04: Atomic decrement-and-check via Lua script
+      const shouldComplete = await redis.eval(
+        DECR_AND_CHECK_LUA,
+        1,
+        `twmail:remaining:${campaignId}`,
+      ) as number;
 
-      if (remainingCount <= 0) {
-        await redis.del(`twmail:remaining:${campaignId}`);
-        await db
+      if (shouldComplete === 1) {
+        const updatedCampaign = await db
           .updateTable('campaigns')
           .set({ status: CampaignStatus.SENT, send_completed_at: new Date() })
           .where('id', '=', campaignId)
           .where('status', '=', CampaignStatus.SENDING)
-          .execute();
+          .returningAll()
+          .executeTakeFirst();
+
+        // BUG-06: Trigger resend-to-non-openers if enabled
+        if (updatedCampaign?.resend_enabled && updatedCampaign?.resend_config) {
+          const config = updatedCampaign.resend_config as { wait_hours?: number };
+          const waitHours = config.wait_hours ?? 72;
+          const resendQueue = new Queue('resend', { connection: redis as any });
+          await resendQueue.add('evaluate', { campaignId }, { delay: waitHours * 3600 * 1000 });
+          await resendQueue.close();
+        }
       }
 
       return { sent: true, messageId, sesMessageId };
@@ -252,9 +292,6 @@ export function createCampaignSendWorker(): Worker {
         return { sent: 0 };
       }
 
-      // Set Redis counter for campaign completion tracking
-      await redis.set(`twmail:remaining:${campaignId}`, contactIds.length);
-
       // Handle A/B test variant assignment
       const bulkSendQueue = new Queue('bulk-send', { connection: redis as any });
 
@@ -299,14 +336,19 @@ export function createCampaignSendWorker(): Worker {
             }
           }
 
-          // Store holdback contacts in Redis for later winner send
+          // Set Redis counter for A/B path (only test contacts are enqueued)
+          await redis.set(`twmail:remaining:${campaignId}`, testContacts.length);
+
+          // BUG-03: Persist holdback to PostgreSQL (survives Redis restart/eviction)
           if (holdbackContacts.length > 0) {
-            await redis.set(
-              `twmail:ab-holdback:${campaignId}`,
-              JSON.stringify(holdbackContacts),
-              'EX',
-              86400 * 7, // 7 days
-            );
+            const holdbackRows = holdbackContacts.map((contactId: number) => ({
+              campaign_id: campaignId,
+              contact_id: contactId,
+            }));
+            for (let i = 0; i < holdbackRows.length; i += 500) {
+              const batch = holdbackRows.slice(i, i + 500);
+              await db.insertInto('campaign_holdback_contacts').values(batch).execute();
+            }
 
             // Schedule A/B evaluation job
             const waitHours = abConfig.winner_wait_hours ?? 4;
@@ -320,6 +362,9 @@ export function createCampaignSendWorker(): Worker {
           }
         }
       } else {
+        // Set Redis counter for standard path (all contacts are enqueued)
+        await redis.set(`twmail:remaining:${campaignId}`, contactIds.length);
+
         // Standard send: enqueue all contacts
         for (const contactId of contactIds) {
           await bulkSendQueue.add('send', { contactId, campaignId });
