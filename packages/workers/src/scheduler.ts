@@ -1,6 +1,9 @@
 import { Queue, type ConnectionOptions } from 'bullmq';
 import { getDb, getRedis, CampaignStatus } from '@twmail/shared';
 
+/** Campaigns stuck in SENDING longer than this are re-enqueued by the scheduler. */
+export const STALE_SENDING_THRESHOLD_MS = 10 * 60 * 1000; // 600_000 ms = 10 minutes
+
 /**
  * BUG-05: Scheduled campaign trigger.
  * Polls every 60 seconds for campaigns with status=SCHEDULED and scheduled_at <= NOW().
@@ -10,6 +13,10 @@ import { getDb, getRedis, CampaignStatus } from '@twmail/shared';
  * If two worker replicas poll simultaneously, only one will successfully
  * update the row (PostgreSQL row-level locking). The other gets 0 rows
  * and skips.
+ *
+ * Also detects campaigns stuck in SENDING for longer than STALE_SENDING_THRESHOLD_MS
+ * and re-enqueues them without changing status. The campaign-send worker handles
+ * re-resolution of unsent contacts idempotently (shouldSkipSend dedup).
  */
 export async function startScheduler(): Promise<{ interval: NodeJS.Timeout; queue: Queue }> {
   const db = getDb();
@@ -40,6 +47,20 @@ export async function startScheduler(): Promise<{ interval: NodeJS.Timeout; queu
           await campaignSendQueue.add('send', { campaignId: campaign.id });
           console.log(`Scheduler: campaign ${campaign.id} transitioned SCHEDULED -> SENDING`);
         }
+      }
+
+      // SENDING stall recovery: re-enqueue campaigns stuck in SENDING > 10 minutes
+      const staleThreshold = new Date(Date.now() - STALE_SENDING_THRESHOLD_MS);
+      const stuck = await db
+        .selectFrom('campaigns')
+        .select(['id'])
+        .where('status', '=', CampaignStatus.SENDING)
+        .where('send_started_at', '<=', staleThreshold)
+        .execute();
+
+      for (const campaign of stuck) {
+        await campaignSendQueue.add('send', { campaignId: campaign.id });
+        console.log(`Scheduler: re-enqueued stuck campaign ${campaign.id} (SENDING > 10min)`);
       }
     } catch (err) {
       console.error('Scheduler poll error:', err);
