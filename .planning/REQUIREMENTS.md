@@ -56,16 +56,16 @@ Requirements for production-ready launch. Each maps to roadmap phases.
 
 ### Code Quality
 
-- [ ] **QUAL-01**: ESLint v9 flat config with typescript-eslint v8 configured across monorepo
-- [ ] **QUAL-02**: no-floating-promises rule enabled (catches async bugs in Fastify handlers/workers)
+- [x] **QUAL-01**: ESLint v9 flat config with typescript-eslint v8 configured across monorepo
+- [x] **QUAL-02**: no-floating-promises rule enabled (catches async bugs in Fastify handlers/workers)
 - [ ] **QUAL-03**: Vitest configured with coverage for critical paths
 - [ ] **QUAL-04**: Tests for SNS handler idempotency
 - [ ] **QUAL-05**: Tests for bulk-send deduplication
 - [ ] **QUAL-06**: Tests for segment query logic (AND/OR precedence)
-- [ ] **QUAL-07**: lint-staged + husky pre-commit hooks configured
+- [x] **QUAL-07**: lint-staged + husky pre-commit hooks configured
 - [ ] **QUAL-08**: tsconfig strict: true verified; any escapes in JSONB handling removed
 - [ ] **QUAL-09**: Error response shape consistent across all routes ({ error: { code, message } })
-- [ ] **QUAL-10**: Prettier configured with eslint-config-prettier integration
+- [x] **QUAL-10**: Prettier configured with eslint-config-prettier integration
 
 ### Operational Readiness
 
@@ -159,16 +159,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFRA-08 | Phase 6 | Complete |
 | INFRA-09 | Phase 6 | Complete |
 | INFRA-10 | Phase 6 | Complete |
-| QUAL-01 | Phase 7 | Pending |
-| QUAL-02 | Phase 7 | Pending |
+| QUAL-01 | Phase 7 | Complete |
+| QUAL-02 | Phase 7 | Complete |
 | QUAL-03 | Phase 7 | Pending |
 | QUAL-04 | Phase 7 | Pending |
 | QUAL-05 | Phase 7 | Pending |
 | QUAL-06 | Phase 7 | Pending |
-| QUAL-07 | Phase 7 | Pending |
+| QUAL-07 | Phase 7 | Complete |
 | QUAL-08 | Phase 8 | Pending |
 | QUAL-09 | Phase 8 | Pending |
-| QUAL-10 | Phase 7 | Pending |
+| QUAL-10 | Phase 7 | Complete |
 | OPS-01 | Phase 9 | Pending |
 | OPS-02 | Phase 9 | Pending |
 | OPS-03 | Phase 9 | Pending |
