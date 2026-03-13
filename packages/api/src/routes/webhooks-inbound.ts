@@ -1,6 +1,8 @@
 import type { FastifyPluginAsync } from 'fastify';
 import crypto from 'node:crypto';
 import { getDb, ContactStatus, EventType, MessageStatus } from '@twmail/shared';
+import type { Kysely } from 'kysely';
+import type { Database } from '@twmail/shared';
 
 // Fields used to build the signing string for SNS signature verification
 const NOTIFICATION_SIGNING_FIELDS = ['Message', 'MessageId', 'Subject', 'Timestamp', 'TopicArn', 'Type'];
@@ -59,7 +61,7 @@ async function verifySnsSignature(message: Record<string, unknown>): Promise<boo
   // Download and cache the signing certificate
   const cached = certCache.get(certUrl);
   let pem: string | undefined;
-  if (cached && (Date.now() - cached.fetchedAt) < CERT_CACHE_TTL_MS) {
+  if (cached && Date.now() - cached.fetchedAt < CERT_CACHE_TTL_MS) {
     pem = cached.pem;
   } else {
     certCache.delete(certUrl);
@@ -88,6 +90,43 @@ async function verifySnsSignature(message: Record<string, unknown>): Promise<boo
   } catch {
     return false;
   }
+}
+
+/**
+ * Insert a bounce/complaint event with idempotency guard.
+ * Uses ON CONFLICT (message_id, event_type) DO NOTHING to prevent duplicate events.
+ * Returns { inserted: true } if the row was inserted, { inserted: false } if it was a duplicate.
+ *
+ * Exported for unit testing without a live database.
+ */
+export async function processBounceSnsEvent(
+  db: Kysely<Database>,
+  snsMessageId: string,
+  messageId: string,
+  contactId: number,
+  campaignId: number | null,
+  variantId: number | null,
+  bounceType: string,
+  metadata: Record<string, unknown>,
+): Promise<{ inserted: boolean }> {
+  const isHard = bounceType === 'Permanent';
+  const eventType = isHard ? EventType.HARD_BOUNCE : EventType.SOFT_BOUNCE;
+
+  const result = await (db as any)
+    .insertInto('events')
+    .values({
+      event_type: eventType,
+      contact_id: contactId,
+      campaign_id: campaignId,
+      variant_id: variantId,
+      message_id: messageId,
+      event_time: new Date(),
+      metadata: { sns_message_id: snsMessageId, ...metadata },
+    })
+    .onConflict((oc: any) => oc.columns(['message_id', 'event_type']).doNothing())
+    .executeTakeFirst();
+
+  return { inserted: ((result as any)?.numInsertedOrUpdatedRows ?? 0n) > 0n };
 }
 
 export const webhooksInboundRoutes: FastifyPluginAsync = async (app) => {
@@ -155,11 +194,7 @@ export const webhooksInboundRoutes: FastifyPluginAsync = async (app) => {
   });
 };
 
-async function processNotification(
-  db: any,
-  type: string,
-  data: Record<string, unknown>,
-): Promise<void> {
+async function processNotification(db: any, type: string, data: Record<string, unknown>): Promise<void> {
   const mail = data['mail'] as Record<string, unknown> | undefined;
   const sesMessageId = (mail?.['messageId'] as string) ?? null;
 
@@ -176,9 +211,7 @@ async function processNotification(
 
   // Idempotency check using SES feedback ID
   const feedbackId =
-    (data as any)?.bounce?.feedbackId ??
-    (data as any)?.complaint?.feedbackId ??
-    (data as any)?.delivery?.timestamp;
+    (data as any)?.bounce?.feedbackId ?? (data as any)?.complaint?.feedbackId ?? (data as any)?.delivery?.timestamp;
 
   switch (type) {
     case 'Bounce': {
@@ -212,11 +245,9 @@ async function processNotification(
       }
 
       const bounceOps: Promise<unknown>[] = [
-        db.updateTable('messages')
-          .set({ status: MessageStatus.BOUNCED })
-          .where('id', '=', message.id)
-          .execute(),
-        db.updateTable('campaigns')
+        db.updateTable('messages').set({ status: MessageStatus.BOUNCED }).where('id', '=', message.id).execute(),
+        db
+          .updateTable('campaigns')
           .set((eb: any) => ({ total_bounces: eb('total_bounces', '+', 1) }))
           .where('id', '=', message.campaign_id)
           .execute(),
@@ -224,7 +255,8 @@ async function processNotification(
 
       if (isHard) {
         bounceOps.push(
-          db.updateTable('contacts')
+          db
+            .updateTable('contacts')
             .set({ status: ContactStatus.BOUNCED })
             .where('id', '=', message.contact_id)
             .execute(),
@@ -262,15 +294,14 @@ async function processNotification(
       }
 
       await Promise.all([
-        db.updateTable('messages')
-          .set({ status: MessageStatus.COMPLAINED })
-          .where('id', '=', message.id)
-          .execute(),
-        db.updateTable('contacts')
+        db.updateTable('messages').set({ status: MessageStatus.COMPLAINED }).where('id', '=', message.id).execute(),
+        db
+          .updateTable('contacts')
           .set({ status: ContactStatus.COMPLAINED })
           .where('id', '=', message.contact_id)
           .execute(),
-        db.updateTable('campaigns')
+        db
+          .updateTable('campaigns')
           .set((eb: any) => ({ total_complaints: eb('total_complaints', '+', 1) }))
           .where('id', '=', message.campaign_id)
           .execute(),
@@ -280,19 +311,24 @@ async function processNotification(
 
     case 'Delivery': {
       await Promise.all([
-        db.insertInto('events').values({
-          event_type: EventType.DELIVERED,
-          contact_id: message.contact_id,
-          campaign_id: message.campaign_id,
-          variant_id: message.variant_id,
-          message_id: message.id,
-          event_time: new Date(),
-        }).execute(),
-        db.updateTable('messages')
+        db
+          .insertInto('events')
+          .values({
+            event_type: EventType.DELIVERED,
+            contact_id: message.contact_id,
+            campaign_id: message.campaign_id,
+            variant_id: message.variant_id,
+            message_id: message.id,
+            event_time: new Date(),
+          })
+          .execute(),
+        db
+          .updateTable('messages')
           .set({ status: MessageStatus.DELIVERED, delivered_at: new Date() })
           .where('id', '=', message.id)
           .execute(),
-        db.updateTable('campaigns')
+        db
+          .updateTable('campaigns')
           .set((eb: any) => ({ total_delivered: eb('total_delivered', '+', 1) }))
           .where('id', '=', message.campaign_id)
           .execute(),

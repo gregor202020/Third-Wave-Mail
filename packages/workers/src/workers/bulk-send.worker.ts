@@ -1,6 +1,16 @@
 import { Worker, Queue, type Job, type ConnectionOptions } from 'bullmq';
-import { getDb, getRedis, CampaignStatus, ContactStatus, MessageStatus, EventType, resolveSegmentContactIds } from '@twmail/shared';
+import {
+  getDb,
+  getRedis,
+  CampaignStatus,
+  ContactStatus,
+  MessageStatus,
+  EventType,
+  resolveSegmentContactIds,
+} from '@twmail/shared';
 import type { Contact, Campaign } from '@twmail/shared';
+import type { Kysely } from 'kysely';
+import type { Database } from '@twmail/shared';
 import { sendEmail } from '../ses-client.js';
 import { processMergeTags } from '../merge-tags.js';
 import { injectTrackingPixel, rewriteLinks, getUnsubscribeHeaders } from '../tracking.js';
@@ -18,6 +28,23 @@ const DECR_AND_CHECK_LUA = `
   end
   return 0
 `;
+
+/**
+ * Check if an email has already been sent for the given campaign/contact pair.
+ * Returns true if a message record already exists (skip), false if safe to send.
+ *
+ * Exported for unit testing without a live database.
+ */
+export async function shouldSkipSend(db: Kysely<Database>, campaignId: number, contactId: number): Promise<boolean> {
+  const existing = await (db as any)
+    .selectFrom('messages')
+    .select(['id'])
+    .where('campaign_id', '=', campaignId)
+    .where('contact_id', '=', contactId)
+    .executeTakeFirst();
+
+  return existing !== undefined;
+}
 
 export interface BulkSendJobData {
   contactId: number;
@@ -53,11 +80,7 @@ export function createBulkSendWorker(): Worker {
       }
 
       // Fetch campaign
-      const campaign = await db
-        .selectFrom('campaigns')
-        .selectAll()
-        .where('id', '=', campaignId)
-        .executeTakeFirst();
+      const campaign = await db.selectFrom('campaigns').selectAll().where('id', '=', campaignId).executeTakeFirst();
 
       if (!campaign || campaign.status === CampaignStatus.CANCELLED || campaign.status === CampaignStatus.PAUSED) {
         return { skipped: true, reason: 'campaign_not_active' };
@@ -93,18 +116,12 @@ export function createBulkSendWorker(): Worker {
       }
 
       // BUG-02: Idempotency check — skip if already sent for this campaign/contact
-      const existingMessage = await db
-        .selectFrom('messages')
-        .select(['id', 'ses_message_id', 'status'])
-        .where('campaign_id', '=', campaignId)
-        .where('contact_id', '=', contactId)
-        .executeTakeFirst();
-
-      if (existingMessage) {
+      const skipSend = await shouldSkipSend(db, campaignId, contactId);
+      if (skipSend) {
         // Already sent or in progress — skip this retry
         // Still decrement the counter so campaign completion isn't blocked
         await redis.eval(DECR_AND_CHECK_LUA, 1, `twmail:remaining:${campaignId}`);
-        return { skipped: true, reason: 'already_sent', messageId: existingMessage.id };
+        return { skipped: true, reason: 'already_sent' };
       }
 
       // Create message record
@@ -149,9 +166,7 @@ export function createBulkSendWorker(): Worker {
         headers['X-SES-CONFIGURATION-SET'] = SES_CONFIG_SET;
 
         // Send via SES
-        const fromAddress = campaign.from_name
-          ? `${campaign.from_name} <${campaign.from_email}>`
-          : campaign.from_email;
+        const fromAddress = campaign.from_name ? `${campaign.from_name} <${campaign.from_email}>` : campaign.from_email;
 
         const sesMessageId = await sendEmail({
           from: fromAddress,
@@ -197,11 +212,7 @@ export function createBulkSendWorker(): Worker {
           .execute();
 
         // BUG-04: Atomic decrement-and-check via Lua script
-        const shouldComplete = await redis.eval(
-          DECR_AND_CHECK_LUA,
-          1,
-          `twmail:remaining:${campaignId}`,
-        ) as number;
+        const shouldComplete = (await redis.eval(DECR_AND_CHECK_LUA, 1, `twmail:remaining:${campaignId}`)) as number;
 
         // Counter was decremented on the success path — skip the finally block decrement
         shouldDecrementOnError = false;
@@ -231,9 +242,11 @@ export function createBulkSendWorker(): Worker {
         // decrement now so the campaign can still transition to SENT.
         if (shouldDecrementOnError) {
           try {
-            const shouldComplete = await redis.eval(
-              DECR_AND_CHECK_LUA, 1, `twmail:remaining:${campaignId}`
-            ) as number;
+            const shouldComplete = (await redis.eval(
+              DECR_AND_CHECK_LUA,
+              1,
+              `twmail:remaining:${campaignId}`,
+            )) as number;
             if (shouldComplete === 1) {
               await db
                 .updateTable('campaigns')
@@ -289,11 +302,7 @@ export function createCampaignSendWorker(): Worker {
       const { campaignId } = job.data;
       const db = getDb();
 
-      const campaign = await db
-        .selectFrom('campaigns')
-        .selectAll()
-        .where('id', '=', campaignId)
-        .executeTakeFirst();
+      const campaign = await db.selectFrom('campaigns').selectAll().where('id', '=', campaignId).executeTakeFirst();
 
       if (!campaign) {
         return { error: 'campaign_not_found' };
@@ -389,11 +398,7 @@ export function createCampaignSendWorker(): Worker {
             // Schedule A/B evaluation job
             const waitHours = abConfig.winner_wait_hours ?? 4;
             const abEvalQueue = new Queue('ab-eval', { connection: redis as unknown as ConnectionOptions });
-            await abEvalQueue.add(
-              'evaluate',
-              { campaignId },
-              { delay: waitHours * 3600 * 1000 },
-            );
+            await abEvalQueue.add('evaluate', { campaignId }, { delay: waitHours * 3600 * 1000 });
             await abEvalQueue.close();
           }
         }
