@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-data-integrity-error-handling-04-01-PLAN.md
-last_updated: "2026-03-12T23:45:52.392Z"
-last_activity: 2026-03-13 — Plan 02-02 complete (import suppression guard + compliance verification)
+stopped_at: Completed 05-data-integrity-tracking-segments-05-01-PLAN.md
+last_updated: "2026-03-13T11:20:00.000Z"
+last_activity: 2026-03-13 — Plan 05-01 complete (click redirect SENT event link_map fix + URL preservation tests)
 progress:
   total_phases: 12
   completed_phases: 3
   total_plans: 9
-  completed_plans: 8
-  percent: 60
+  completed_plans: 9
+  percent: 65
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-13)
 
 ## Current Position
 
-Phase: 2 of 12 (Compliance)
-Plan: 2 of 2 in current phase
+Phase: 5 of 12 (Data Integrity - Tracking & Segments)
+Plan: 1 of 2 in current phase (05-01 complete, 05-02 next)
 Status: In progress
-Last activity: 2026-03-13 — Plan 02-02 complete (import suppression guard + compliance verification)
+Last activity: 2026-03-13 — Plan 05-01 complete (click redirect SENT event link_map fix + URL preservation tests)
 
-Progress: [██████░░░░] 60%
+Progress: [██████░░░░] 65%
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Progress: [██████░░░░] 60%
 | Phase 03-data-integrity-analytics P02 | 183 | 2 tasks | 3 files |
 | Phase 04-data-integrity-error-handling P02 | 2 | 1 tasks | 1 files |
 | Phase 04-data-integrity-error-handling P01 | 3 | 2 tasks | 3 files |
+| Phase 05-data-integrity-tracking-segments P01 | 15 | 1 task | 2 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,9 @@ Recent decisions affecting current work:
 - [Phase 04-02]: total_sent only increments on confirmed SES send - DATA-07 does not require failure counting
 - [Phase 04-01]: Tracking route failures use request.log.error (Pino), service/plugin non-critical failures use console.warn to differentiate infrastructure errors from housekeeping
 - [Phase 04-01]: Fire-and-forget model preserved in all five catch sites — no await added; pixel/redirect responses still return immediately
+- [Phase 05-01]: resolveClickUrl extracted as exported pure function — accepts raw metadata (unknown), returns validated URL string; testable without DB mocks
+- [Phase 05-01]: CLICK event query removed from redirect handler — SENT event link_map is the sole URL resolution path; CLICK INSERT in recordClick unchanged (write-only audit)
+- [Phase 05-01]: targetUrl passed to reply.redirect() as raw string (not url.href) — prevents double-encoding of percent chars in UTM params and encoded query strings
 
 ### Pending Todos
 
@@ -94,6 +98,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-12T23:42:22.726Z
-Stopped at: Completed 04-data-integrity-error-handling-04-01-PLAN.md
+Last session: 2026-03-13T11:20:00.000Z
+Stopped at: Completed 05-data-integrity-tracking-segments-05-01-PLAN.md
 Resume file: None

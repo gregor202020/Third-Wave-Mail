@@ -93,7 +93,7 @@ Plans:
   2. The click tracking redirect resolves the original URL from the SENT event link_map without scanning the events table
   3. A segment with mixed AND/OR rules returns the same contacts as the equivalent SQL query
   4. The contact count shown in segment preview matches the actual number of contacts a send reaches
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
 - [ ] 05-01-PLAN.md — Fix click redirect to query SENT event link_map (DATA-08, DATA-09)
 - [ ] 05-02-PLAN.md — Add missing segment operators + fix dynamic segment send resolution (DATA-10, DATA-11)
@@ -195,7 +195,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 2. Compliance | 2/2 | Complete   | 2026-03-12 |
 | 3. Data Integrity — Analytics | 2/2 | Complete   | 2026-03-12 |
 | 4. Data Integrity — Error Handling | 2/2 | Complete   | 2026-03-12 |
-| 5. Data Integrity — Tracking & Segments | 0/2 | Not started | - |
+| 5. Data Integrity — Tracking & Segments | 1/2 | In Progress|  |
 | 6. Infrastructure & Security | 0/TBD | Not started | - |
 | 7. Code Quality — Tooling | 0/TBD | Not started | - |
 | 8. Code Quality — Strictness | 0/TBD | Not started | - |

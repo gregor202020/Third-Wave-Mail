@@ -36,8 +36,8 @@ Requirements for production-ready launch. Each maps to roadmap phases.
 - [x] **DATA-05**: Resend-to-non-openers excludes machine opens from "opened" definition
 - [x] **DATA-06**: All .catch(() => {}) replaced with proper error logging
 - [x] **DATA-07**: Campaign counters accurate (no silent drift from swallowed errors)
-- [ ] **DATA-08**: Click tracking redirect preserves original URL including encoded params and UTMs
-- [ ] **DATA-09**: Click tracking queries SENT event link_map first, not events table scan
+- [x] **DATA-08**: Click tracking redirect preserves original URL including encoded params and UTMs
+- [x] **DATA-09**: Click tracking queries SENT event link_map first, not events table scan
 - [ ] **DATA-10**: Segment query AND/OR precedence produces correct contact lists
 - [ ] **DATA-11**: Segment preview counts match actual send counts
 
@@ -145,8 +145,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DATA-05 | Phase 3 | Complete |
 | DATA-06 | Phase 4 | Complete |
 | DATA-07 | Phase 4 | Complete |
-| DATA-08 | Phase 5 | Pending |
-| DATA-09 | Phase 5 | Pending |
+| DATA-08 | Phase 5 | Complete |
+| DATA-09 | Phase 5 | Complete |
 | DATA-10 | Phase 5 | Pending |
 | DATA-11 | Phase 5 | Pending |
 | INFRA-01 | Phase 6 | Pending |
