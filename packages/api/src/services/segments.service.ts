@@ -345,6 +345,20 @@ function buildSingleRule(
       return eb(col, 'in', value as any[]);
     case 'not_in':
       return eb.not(eb(col, 'in', value as any[]));
+    case 'before':
+      return eb(col, '<', new Date(value as string) as any);
+    case 'after':
+      return eb(col, '>', new Date(value as string) as any);
+    case 'between': {
+      const [low, high] = value as [string | number, string | number];
+      return eb.and([eb(col, '>=', low as any), eb(col, '<=', high as any)]);
+    }
+    case 'within_days': {
+      // "within last N days" means column >= (now - N * 86400000ms)
+      const days = Number(value);
+      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      return eb(col, '>=', cutoff as any);
+    }
     default:
       throw new AppError(400, ErrorCode.VALIDATION_ERROR, `Unsupported operator: ${operator}`);
   }
