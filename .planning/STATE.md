@@ -3,11 +3,27 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
+stopped_at: Completed 05-data-integrity-tracking-segments-05-02-PLAN.md
+last_updated: "2026-03-13T00:11:10.681Z"
+last_activity: 2026-03-13 — Plan 05-01 complete (click redirect SENT event link_map fix + URL preservation tests)
+progress:
+  total_phases: 12
+  completed_phases: 4
+  total_plans: 11
+  completed_plans: 10
+  percent: 91
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: executing
 stopped_at: Completed 05-data-integrity-tracking-segments-05-01-PLAN.md
 last_updated: "2026-03-13T11:20:00.000Z"
 last_activity: 2026-03-13 — Plan 05-01 complete (click redirect SENT event link_map fix + URL preservation tests)
 progress:
-  total_phases: 12
+  [█████████░] 91%
   completed_phases: 3
   total_plans: 9
   completed_plans: 9
@@ -57,6 +73,7 @@ Progress: [██████░░░░] 65%
 | Phase 04-data-integrity-error-handling P02 | 2 | 1 tasks | 1 files |
 | Phase 04-data-integrity-error-handling P01 | 3 | 2 tasks | 3 files |
 | Phase 05-data-integrity-tracking-segments P01 | 15 | 1 task | 2 files |
+| Phase 05-data-integrity-tracking-segments P02 | 5 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -83,6 +100,9 @@ Recent decisions affecting current work:
 - [Phase 05-01]: resolveClickUrl extracted as exported pure function — accepts raw metadata (unknown), returns validated URL string; testable without DB mocks
 - [Phase 05-01]: CLICK event query removed from redirect handler — SENT event link_map is the sole URL resolution path; CLICK INSERT in recordClick unchanged (write-only audit)
 - [Phase 05-01]: targetUrl passed to reply.redirect() as raw string (not url.href) — prevents double-encoding of percent chars in UTM params and encoded query strings
+- [Phase 05-02]: resolveSegmentContactIds placed in @twmail/shared — workers package has no api dependency; shared is importable by both packages
+- [Phase 05-02]: within_days operator semantics: column >= (now - N*86400000ms), meaning contacts active within last N days
+- [Phase 05-02]: between operator uses two-element array [low, high] matching existing SegmentRule.value type union
 
 ### Pending Todos
 
@@ -98,6 +118,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T11:20:00.000Z
-Stopped at: Completed 05-data-integrity-tracking-segments-05-01-PLAN.md
+Last session: 2026-03-13T00:11:10.678Z
+Stopped at: Completed 05-data-integrity-tracking-segments-05-02-PLAN.md
 Resume file: None

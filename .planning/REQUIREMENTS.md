@@ -38,8 +38,8 @@ Requirements for production-ready launch. Each maps to roadmap phases.
 - [x] **DATA-07**: Campaign counters accurate (no silent drift from swallowed errors)
 - [x] **DATA-08**: Click tracking redirect preserves original URL including encoded params and UTMs
 - [x] **DATA-09**: Click tracking queries SENT event link_map first, not events table scan
-- [ ] **DATA-10**: Segment query AND/OR precedence produces correct contact lists
-- [ ] **DATA-11**: Segment preview counts match actual send counts
+- [x] **DATA-10**: Segment query AND/OR precedence produces correct contact lists
+- [x] **DATA-11**: Segment preview counts match actual send counts
 
 ### Infrastructure & Security
 
@@ -147,8 +147,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DATA-07 | Phase 4 | Complete |
 | DATA-08 | Phase 5 | Complete |
 | DATA-09 | Phase 5 | Complete |
-| DATA-10 | Phase 5 | Pending |
-| DATA-11 | Phase 5 | Pending |
+| DATA-10 | Phase 5 | Complete |
+| DATA-11 | Phase 5 | Complete |
 | INFRA-01 | Phase 6 | Pending |
 | INFRA-02 | Phase 6 | Pending |
 | INFRA-03 | Phase 6 | Pending |

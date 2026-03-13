@@ -14,7 +14,7 @@ Third Wave Mail is a feature-complete email marketing platform undergoing a prod
 - [x] **Phase 2: Compliance** - Ensure all bounce, complaint, unsubscribe, and import flows meet legal requirements (completed 2026-03-12)
 - [x] **Phase 3: Data Integrity — Analytics** - Correct MPP machine-open detection and A/B test logic (completed 2026-03-12)
 - [x] **Phase 4: Data Integrity — Error Handling** - Replace all swallowed errors with proper logging (completed 2026-03-12)
-- [ ] **Phase 5: Data Integrity — Tracking & Segments** - Fix click tracking, segment logic, and count accuracy
+- [x] **Phase 5: Data Integrity — Tracking & Segments** - Fix click tracking, segment logic, and count accuracy (completed 2026-03-13)
 - [ ] **Phase 6: Infrastructure & Security** - Harden Redis, CORS, PgBouncer, BullMQ, and shutdown behavior
 - [ ] **Phase 7: Code Quality — Tooling** - Install ESLint, Prettier, Vitest, and pre-commit hooks
 - [ ] **Phase 8: Code Quality — Strictness** - TypeScript strict mode, consistent error shapes
@@ -93,7 +93,7 @@ Plans:
   2. The click tracking redirect resolves the original URL from the SENT event link_map without scanning the events table
   3. A segment with mixed AND/OR rules returns the same contacts as the equivalent SQL query
   4. The contact count shown in segment preview matches the actual number of contacts a send reaches
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 05-01-PLAN.md — Fix click redirect to query SENT event link_map (DATA-08, DATA-09)
 - [ ] 05-02-PLAN.md — Add missing segment operators + fix dynamic segment send resolution (DATA-10, DATA-11)
@@ -195,7 +195,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 2. Compliance | 2/2 | Complete   | 2026-03-12 |
 | 3. Data Integrity — Analytics | 2/2 | Complete   | 2026-03-12 |
 | 4. Data Integrity — Error Handling | 2/2 | Complete   | 2026-03-12 |
-| 5. Data Integrity — Tracking & Segments | 1/2 | In Progress|  |
+| 5. Data Integrity — Tracking & Segments | 2/2 | Complete   | 2026-03-13 |
 | 6. Infrastructure & Security | 0/TBD | Not started | - |
 | 7. Code Quality — Tooling | 0/TBD | Not started | - |
 | 8. Code Quality — Strictness | 0/TBD | Not started | - |
