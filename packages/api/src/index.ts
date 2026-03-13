@@ -1,6 +1,6 @@
 import { buildApp } from './app.js';
 import { getConfig } from './config.js';
-import { destroyDb } from '@twmail/shared';
+import { destroyDb, destroyRedis } from '@twmail/shared';
 
 async function main() {
   const config = getConfig();
@@ -10,6 +10,7 @@ async function main() {
     app.log.info(`Received ${signal}, shutting down...`);
     await app.close();
     await destroyDb();
+    await destroyRedis();
     process.exit(0);
   };
 
