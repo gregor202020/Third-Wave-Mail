@@ -145,3 +145,10 @@ None — no external service configuration required.
 ---
 *Phase: 02-compliance*
 *Completed: 2026-03-13*
+
+## Self-Check: PASSED
+
+- FOUND: packages/workers/src/workers/import.worker.ts
+- FOUND: .planning/phases/02-compliance/02-02-SUMMARY.md
+- FOUND: commit ad92e9b (feat: import suppression guard)
+- FOUND: commit b876385 (chore: compliance verification)

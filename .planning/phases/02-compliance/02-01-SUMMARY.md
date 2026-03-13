@@ -72,6 +72,10 @@ Updated `packages/shared/src/schema.ts` to add `physical_address: Generated<stri
 | 1 | Compliance migration and schema update | abd9749 |
 | 2 | SNS idempotency and physical address enforcement | 0f63bc1 |
 
+## Self-Check: PASSED
+
+All files exist, all commits found.
+
 ## Decisions Made
 
 1. **NOT NULL DEFAULT ''**: Physical address stored as empty string rather than NULL. Application logic (`!settings?.physical_address?.trim()`) treats empty string as "not configured". This avoids nullable column complications in Kysely types.

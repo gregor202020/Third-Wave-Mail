@@ -187,7 +187,7 @@ Plans:
   2. An external uptime monitor is watching the /health endpoint and will alert on any outage
 **Plans:** 1/1 plans complete
 Plans:
-- TBD
+- [x] 12-01-PLAN.md — SES DNS verification script + health check script + production readiness tests (OBS-04, OBS-05)
 
 ## Progress
 
