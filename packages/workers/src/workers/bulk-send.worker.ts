@@ -1,5 +1,5 @@
 import { Worker, Queue, type Job } from 'bullmq';
-import { getDb, getRedis, CampaignStatus, ContactStatus, MessageStatus, EventType } from '@twmail/shared';
+import { getDb, getRedis, CampaignStatus, ContactStatus, MessageStatus, EventType, resolveSegmentContactIds } from '@twmail/shared';
 import type { Contact, Campaign } from '@twmail/shared';
 import { sendEmail } from '../ses-client.js';
 import { processMergeTags } from '../merge-tags.js';
@@ -301,15 +301,10 @@ export function createCampaignSendWorker(): Worker {
       let contactIds: number[] = [];
 
       if (campaign.segment_id) {
-        // Resolve from segment
-        const contacts = await db
-          .selectFrom('contacts')
-          .select('id')
-          .where('status', '=', ContactStatus.ACTIVE)
-          .innerJoin('contact_segments', 'contact_segments.contact_id', 'contacts.id')
-          .where('contact_segments.segment_id', '=', campaign.segment_id)
-          .execute();
-        contactIds = contacts.map((c) => c.id);
+        // DATA-11: Use resolveSegmentContactIds to handle both static and dynamic segments.
+        // Static segments use the contact_segments pivot table; dynamic segments evaluate
+        // rules via buildRuleFilter — same logic as getSegmentCount (single source of truth).
+        contactIds = await resolveSegmentContactIds(campaign.segment_id);
       } else if (campaign.list_id) {
         // Resolve from list
         const contacts = await db

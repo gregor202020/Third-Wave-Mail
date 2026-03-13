@@ -263,6 +263,41 @@ export async function removeContactFromSegment(segmentId: number, contactId: num
 }
 
 // ============================================================================
+// resolveSegmentContactIds — used by both API preview and send worker
+//
+// For STATIC segments: queries the contact_segments pivot table.
+// For DYNAMIC segments: evaluates rules via buildRuleFilter.
+// Both paths filter to ContactStatus.ACTIVE contacts only.
+// ============================================================================
+
+export async function resolveSegmentContactIds(segmentId: number): Promise<number[]> {
+  const db = getDb();
+  const segment = await getSegment(segmentId);
+
+  if (segment.type === SegmentType.STATIC) {
+    const rows = await db
+      .selectFrom('contact_segments')
+      .innerJoin('contacts', 'contacts.id', 'contact_segments.contact_id')
+      .select('contacts.id')
+      .where('contact_segments.segment_id', '=', segmentId)
+      .where('contacts.status', '=', ContactStatus.ACTIVE)
+      .execute();
+    return rows.map((r) => r.id);
+  }
+
+  // Dynamic segment: evaluate rules on demand
+  if (!segment.rules) return [];
+  const ruleGroup = segment.rules as unknown as SegmentRuleGroup;
+  const rows = await db
+    .selectFrom('contacts')
+    .select('id')
+    .where('status', '=', ContactStatus.ACTIVE)
+    .where(buildRuleFilter(ruleGroup))
+    .execute();
+  return rows.map((r) => r.id);
+}
+
+// ============================================================================
 // Rule engine — builds Kysely WHERE clauses from segment rules
 // ============================================================================
 
