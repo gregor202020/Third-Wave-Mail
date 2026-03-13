@@ -82,8 +82,8 @@ Requirements for production-ready launch. Each maps to roadmap phases.
 - [x] **OBS-01**: Sentry configured for API, workers, and frontend
 - [x] **OBS-02**: Pino structured logging with PII redaction (emails, JWTs) in production
 - [x] **OBS-03**: pino-pretty removed from production builds
-- [ ] **OBS-04**: SES DNS records verified (SPF, DKIM, DMARC p=quarantine minimum)
-- [ ] **OBS-05**: External uptime monitoring configured for /health endpoint
+- [x] **OBS-04**: SES DNS records verified (SPF, DKIM, DMARC p=quarantine minimum)
+- [x] **OBS-05**: External uptime monitoring configured for /health endpoint
 
 ## v2 Requirements
 
@@ -179,8 +179,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OBS-01 | Phase 11 | Complete |
 | OBS-02 | Phase 11 | Complete |
 | OBS-03 | Phase 11 | Complete |
-| OBS-04 | Phase 12 | Pending |
-| OBS-05 | Phase 12 | Pending |
+| OBS-04 | Phase 12 | Complete |
+| OBS-05 | Phase 12 | Complete |
 
 **Coverage:**
 - v1 requirements: 52 total

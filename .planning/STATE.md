@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 11-observability-11-01-PLAN.md
-last_updated: "2026-03-13T05:32:35.841Z"
+stopped_at: Completed 12-production-launch-12-01-PLAN.md
+last_updated: "2026-03-13T05:49:55.464Z"
 last_activity: 2026-03-13 — Plan 05-01 complete (click redirect SENT event link_map fix + URL preservation tests)
 progress:
   total_phases: 12
-  completed_phases: 10
-  total_plans: 22
-  completed_plans: 21
+  completed_phases: 11
+  total_plans: 23
+  completed_plans: 22
 ---
 
 ---
@@ -100,6 +100,7 @@ Progress: [██████░░░░] 65%
 | Phase 10-email-output P01 | 356 | 2 tasks | 4 files |
 | Phase 11-observability P02 | 6 | 1 tasks | 8 files |
 | Phase 11-observability P01 | 14 | 2 tasks | 14 files |
+| Phase 12-production-launch P01 | 3 | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -163,6 +164,8 @@ Recent decisions affecting current work:
 - [Phase 11-01]: Sentry.setupFastifyErrorHandler registered before all plugins to catch plugin registration errors
 - [Phase 11-01]: Workers use standalone pino logger — no Fastify context; API routes still use request.log per Phase 04-01
 - [Phase 11-01]: SENTRY_DSN optional in config schema — logs warn in production if unset but does not crash startup
+- [Phase 12-production-launch]: SES DNS script uses both SES API (GetEmailIdentityCommand) and Node dns.promises — API for identity+DKIM, DNS for SPF/DMARC
+- [Phase 12-production-launch]: DMARC enforcement minimum p=quarantine — p=none rejected as too weak
 
 ### Pending Todos
 
@@ -178,6 +181,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T05:25:38.372Z
-Stopped at: Completed 11-observability-11-01-PLAN.md
+Last session: 2026-03-13T05:49:55.453Z
+Stopped at: Completed 12-production-launch-12-01-PLAN.md
 Resume file: None
