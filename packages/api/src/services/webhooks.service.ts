@@ -1,7 +1,8 @@
 import { getDb, getRedis, ErrorCode, WebhookDeliveryStatus } from '@twmail/shared';
 import type { PaginationParams, PaginatedResponse, WebhookEndpoint, WebhookDelivery } from '@twmail/shared';
 import { AppError } from '../plugins/error-handler.js';
-import { randomBytes, createHmac } from 'crypto';
+import { randomBytes } from 'crypto';
+import { Queue, type ConnectionOptions } from 'bullmq';
 
 export async function listWebhookEndpoints(): Promise<WebhookEndpoint[]> {
   const db = getDb();
@@ -67,7 +68,7 @@ export async function deleteWebhookEndpoint(id: number): Promise<void> {
 }
 
 export async function testWebhookEndpoint(id: number): Promise<void> {
-  const endpoint = await getWebhookEndpoint(id);
+  await getWebhookEndpoint(id); // Validates endpoint exists (throws 404 if not)
 
   await enqueueWebhookDelivery('webhook.test', {
     test: true,
@@ -112,7 +113,6 @@ export async function getWebhookDeliveries(
 // Enqueue a webhook delivery for all matching endpoints
 export async function enqueueWebhookDelivery(eventType: string, data: Record<string, unknown>): Promise<void> {
   const db = getDb();
-  const redis = getRedis();
 
   // Find active endpoints subscribed to this event
   const endpoints = await db.selectFrom('webhook_endpoints').selectAll().where('active', '=', true).execute();
@@ -138,18 +138,17 @@ export async function enqueueWebhookDelivery(eventType: string, data: Record<str
       .returningAll()
       .executeTakeFirstOrThrow();
 
-    // Enqueue for worker processing
-    await redis.lpush(
-      'twmail:webhook-send',
-      JSON.stringify({
-        deliveryId: delivery.id,
-        endpointId: endpoint.id,
-        url: endpoint.url,
-        secret: endpoint.secret,
-        eventType,
-        payload,
-        attempt: 1,
-      }),
-    );
+    // Enqueue via BullMQ so the webhook worker picks it up from the 'webhook' queue
+    const queue = new Queue('webhook', { connection: getRedis() as unknown as ConnectionOptions });
+    await queue.add('deliver', {
+      deliveryId: delivery.id,
+      endpointId: endpoint.id,
+      url: endpoint.url,
+      secret: endpoint.secret,
+      eventType,
+      payload,
+      attempt: 1,
+    });
+    await queue.close();
   }
 }
