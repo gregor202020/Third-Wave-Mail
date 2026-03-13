@@ -13,6 +13,7 @@ import type { Database } from '@twmail/shared';
 import { sendEmail } from '../ses-client.js';
 import { processMergeTags } from '../merge-tags.js';
 import { injectTrackingPixel, rewriteLinks, getUnsubscribeHeaders } from '../tracking.js';
+import { assertAbsoluteUrls, isMjmlSource } from '../email-output.js';
 
 const SES_CONFIG_SET = process.env['SES_CONFIGURATION_SET'] ?? 'marketing';
 
@@ -113,6 +114,15 @@ export function createBulkSendWorker(): Worker {
       if (!html || !subject) {
         return { skipped: true, reason: 'missing_content' };
       }
+
+      // OPS-04: Defensive guard — reject uncompiled MJML source
+      if (isMjmlSource(html)) {
+        console.error('OPS-04: Received uncompiled MJML source in bulk-send worker', { campaignId });
+        return { skipped: true, reason: 'uncompiled_mjml' };
+      }
+
+      // OPS-05: Reject relative URLs before processing
+      assertAbsoluteUrls(html, campaignId);
 
       // BUG-02: Idempotency check — skip if already sent for this campaign/contact
       const skipSend = await shouldSkipSend(db, campaignId, contactId);
