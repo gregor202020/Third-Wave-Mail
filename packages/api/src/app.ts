@@ -2,7 +2,9 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
+import * as Sentry from '@sentry/node';
 import { getConfig } from './config.js';
+import type { Config } from './config.js';
 import { errorHandlerPlugin } from './plugins/error-handler.js';
 import { authPlugin } from './plugins/auth.js';
 import { rateLimitPlugin } from './plugins/rate-limit.js';
@@ -23,14 +25,46 @@ import { reportRoutes } from './routes/reports.js';
 import { userRoutes } from './routes/users.js';
 import { settingsRoutes } from './routes/settings.js';
 
+const PII_REDACT_PATHS = [
+  'req.headers.authorization',
+  'req.headers.cookie',
+  'req.body.email',
+  'req.body.password',
+  '*.email',
+];
+
+function buildLogger(config: Config) {
+  const base = {
+    level: config.LOG_LEVEL,
+    redact: { paths: PII_REDACT_PATHS, censor: '[REDACTED]' },
+  };
+
+  if (config.NODE_ENV !== 'production') {
+    return {
+      ...base,
+      transport: {
+        target: 'pino-pretty',
+        options: { translateTime: 'HH:MM:ss Z', ignore: 'pid,hostname' },
+      },
+    };
+  }
+
+  return base;
+}
+
 export async function buildApp() {
   const config = getConfig();
 
   const app = Fastify({
-    logger: {
-      level: config.LOG_LEVEL,
-    },
+    logger: buildLogger(config),
   });
+
+  // Register Sentry error handler BEFORE other plugins so it captures all errors
+  Sentry.setupFastifyErrorHandler(app);
+
+  if (config.NODE_ENV === 'production' && !config.SENTRY_DSN) {
+    app.log.warn('SENTRY_DSN not configured — Sentry is disabled in production');
+  }
 
   // Plugins
   const rawOrigins = config.ALLOWED_ORIGINS;

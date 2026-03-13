@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 10-email-output-10-01-PLAN.md
-last_updated: "2026-03-13T03:23:06.466Z"
+stopped_at: Completed 11-observability-11-02-PLAN.md
+last_updated: "2026-03-13T05:15:48.179Z"
 last_activity: 2026-03-13 — Plan 05-01 complete (click redirect SENT event link_map fix + URL preservation tests)
 progress:
   total_phases: 12
   completed_phases: 9
-  total_plans: 20
-  completed_plans: 19
+  total_plans: 22
+  completed_plans: 20
 ---
 
 ---
@@ -98,6 +98,7 @@ Progress: [██████░░░░] 65%
 | Phase 09-operational-readiness P01 | 268 | 2 tasks | 6 files |
 | Phase 09-operational-readiness P02 | 6 | 2 tasks | 3 files |
 | Phase 10-email-output P01 | 356 | 2 tasks | 4 files |
+| Phase 11-observability P02 | 6 | 1 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -155,6 +156,8 @@ Recent decisions affecting current work:
 - [Phase 10-email-output]: GrapesEditor.getHtml() uses runCommand('mjml-code-to-html') — returns compiled HTML not MJML XML
 - [Phase 10-email-output]: assertAbsoluteUrls placed before shouldSkipSend — invalid content fails fast before dedup check
 - [Phase 10-email-output]: isMjmlSource guard returns skipped result; assertAbsoluteUrls throws as hard guard for BullMQ job failure
+- [Phase 11-02]: NEXT_PUBLIC_SENTRY_DSN passed as Docker ARG before build step so it is baked into the client bundle at image build time
+- [Phase 11-02]: onRequestError = Sentry.captureRequestError re-exported directly — no wrapper needed for Next.js 15+ server error capture
 
 ### Pending Todos
 
@@ -170,6 +173,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T03:20:01.674Z
-Stopped at: Completed 10-email-output-10-01-PLAN.md
+Last session: 2026-03-13T05:15:48.174Z
+Stopped at: Completed 11-observability-11-02-PLAN.md
 Resume file: None

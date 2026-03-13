@@ -20,7 +20,9 @@ COPY --from=base /app/packages/shared/dist ./packages/shared/dist
 COPY --from=base /app/packages/shared/package.json ./packages/shared/
 COPY --from=base /app/packages/workers/dist ./packages/workers/dist
 COPY --from=base /app/packages/workers/package.json ./packages/workers/
+# instrument.mjs is plain ESM source — copy it so --import can load it at runtime
+COPY --from=base /app/packages/workers/src/instrument.mjs ./packages/workers/src/instrument.mjs
 COPY --from=base /app/package.json ./
 
 ENV NODE_ENV=production
-CMD ["node", "packages/workers/dist/index.js"]
+CMD ["node", "--import", "./packages/workers/src/instrument.mjs", "packages/workers/dist/index.js"]

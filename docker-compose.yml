@@ -85,6 +85,7 @@ services:
       - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
       - LOG_LEVEL=${LOG_LEVEL}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
+      - SENTRY_DSN=${SENTRY_DSN:-}
     ports:
       - "3000:3000"
     depends_on:
@@ -112,6 +113,7 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - SES_CONFIGURATION_SET=${SES_CONFIGURATION_SET:-marketing}
+      - SENTRY_DSN=${SENTRY_DSN:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -137,6 +139,7 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - SES_CONFIGURATION_SET=${SES_CONFIGURATION_SET:-marketing}
+      - SENTRY_DSN=${SENTRY_DSN:-}
     depends_on:
       postgres:
         condition: service_healthy

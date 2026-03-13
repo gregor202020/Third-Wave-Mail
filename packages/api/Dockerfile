@@ -20,8 +20,10 @@ COPY --from=base /app/packages/shared/dist ./packages/shared/dist
 COPY --from=base /app/packages/shared/package.json ./packages/shared/
 COPY --from=base /app/packages/api/dist ./packages/api/dist
 COPY --from=base /app/packages/api/package.json ./packages/api/
+# instrument.mjs is plain ESM source — copy it so --import can load it at runtime
+COPY --from=base /app/packages/api/src/instrument.mjs ./packages/api/src/instrument.mjs
 COPY --from=base /app/package.json ./
 
 ENV NODE_ENV=production
 EXPOSE 3000
-CMD ["node", "packages/api/dist/index.js"]
+CMD ["node", "--import", "./packages/api/src/instrument.mjs", "packages/api/dist/index.js"]

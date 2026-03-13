@@ -79,7 +79,7 @@ Requirements for production-ready launch. Each maps to roadmap phases.
 
 ### Observability
 
-- [ ] **OBS-01**: Sentry configured for API, workers, and frontend
+- [x] **OBS-01**: Sentry configured for API, workers, and frontend
 - [ ] **OBS-02**: Pino structured logging with PII redaction (emails, JWTs) in production
 - [ ] **OBS-03**: pino-pretty removed from production builds
 - [ ] **OBS-04**: SES DNS records verified (SPF, DKIM, DMARC p=quarantine minimum)
@@ -176,7 +176,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OPS-05 | Phase 10 | Complete |
 | OPS-06 | Phase 9 | Complete |
 | OPS-07 | Phase 9 | Complete |
-| OBS-01 | Phase 11 | Pending |
+| OBS-01 | Phase 11 | Complete |
 | OBS-02 | Phase 11 | Pending |
 | OBS-03 | Phase 11 | Pending |
 | OBS-04 | Phase 12 | Pending |

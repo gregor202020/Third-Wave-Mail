@@ -14,6 +14,7 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   ALLOWED_ORIGINS: z.string().default(''),
+  SENTRY_DSN: z.string().optional(),
 });
 
 export type Config = z.infer<typeof envSchema>;
