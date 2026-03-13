@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 07-code-quality-tooling-07-02-PLAN.md
-last_updated: "2026-03-13T01:27:36.266Z"
+stopped_at: Completed 08-code-quality-strictness-08-02-PLAN.md
+last_updated: "2026-03-13T02:00:05.631Z"
 last_activity: 2026-03-13 — Plan 05-01 complete (click redirect SENT event link_map fix + URL preservation tests)
 progress:
   total_phases: 12
   completed_phases: 6
-  total_plans: 15
-  completed_plans: 14
+  total_plans: 17
+  completed_plans: 15
   percent: 91
 ---
 
@@ -78,6 +78,7 @@ Progress: [██████░░░░] 65%
 | Phase 06-infrastructure-security P01 | 15 | 2 tasks | 3 files |
 | Phase 07-code-quality-tooling P01 | 25 | 2 tasks | 45 files |
 | Phase 07-code-quality-tooling P02 | 9 | 2 tasks | 6 files |
+| Phase 08-code-quality-strictness P02 | 25 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -119,6 +120,9 @@ Recent decisions affecting current work:
 - [Phase 07-02]: processBounceSnsEvent uses ON CONFLICT (message_id, event_type) not (sns_message_id) — events table has no sns_message_id column; idempotency key is (message, event_type) pair
 - [Phase 07-02]: Segment unit tests use Kysely DummyDriver + PostgresAdapter for compile() — no real DB connection required, SQL structure verified via string assertions
 - [Phase 07-02]: shouldSkipSend refactored out of bulk-send worker to accept db as parameter for mock injection in unit tests
+- [Phase 08-02]: SNS webhook errors use inline reply.send with { error: { code, message } } — no AppError throw, SNS callers ignore error bodies
+- [Phase 08-02]: Error shape regression test uses source-code scan (fs.readFileSync) — no DB or HTTP required, fastest guard
+- [Phase 08-02]: INVALID_SNS_SIGNATURE, INVALID_SUBSCRIBE_URL, INVALID_SNS_MESSAGE used as inline error codes in SCREAMING_SNAKE_CASE
 
 ### Pending Todos
 
@@ -134,6 +138,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-13T01:23:25.999Z
-Stopped at: Completed 07-code-quality-tooling-07-02-PLAN.md
+Last session: 2026-03-13T02:00:05.628Z
+Stopped at: Completed 08-code-quality-strictness-08-02-PLAN.md
 Resume file: None

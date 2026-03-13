@@ -64,7 +64,7 @@ Requirements for production-ready launch. Each maps to roadmap phases.
 - [x] **QUAL-06**: Tests for segment query logic (AND/OR precedence)
 - [x] **QUAL-07**: lint-staged + husky pre-commit hooks configured
 - [ ] **QUAL-08**: tsconfig strict: true verified; any escapes in JSONB handling removed
-- [ ] **QUAL-09**: Error response shape consistent across all routes ({ error: { code, message } })
+- [x] **QUAL-09**: Error response shape consistent across all routes ({ error: { code, message } })
 - [x] **QUAL-10**: Prettier configured with eslint-config-prettier integration
 
 ### Operational Readiness
@@ -167,7 +167,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | QUAL-06 | Phase 7 | Complete |
 | QUAL-07 | Phase 7 | Complete |
 | QUAL-08 | Phase 8 | Pending |
-| QUAL-09 | Phase 8 | Pending |
+| QUAL-09 | Phase 8 | Complete |
 | QUAL-10 | Phase 7 | Complete |
 | OPS-01 | Phase 9 | Pending |
 | OPS-02 | Phase 9 | Pending |
