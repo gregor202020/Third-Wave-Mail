@@ -179,10 +179,9 @@ export async function sendCampaign(id: number): Promise<Campaign> {
 
   // Enqueue the campaign for sending via BullMQ
   const redis = getRedis();
-  await redis.lpush(
-    'twmail:campaign-send',
-    JSON.stringify({ campaignId: id }),
-  );
+  const { Queue } = await import('bullmq');
+  const campaignSendQueue = new Queue('campaign-send', { connection: redis as any });
+  await campaignSendQueue.add('send', { campaignId: id });
 
   return result;
 }
