@@ -15,7 +15,7 @@ Third Wave Mail is a feature-complete email marketing platform undergoing a prod
 - [x] **Phase 3: Data Integrity — Analytics** - Correct MPP machine-open detection and A/B test logic (completed 2026-03-12)
 - [x] **Phase 4: Data Integrity — Error Handling** - Replace all swallowed errors with proper logging (completed 2026-03-12)
 - [x] **Phase 5: Data Integrity — Tracking & Segments** - Fix click tracking, segment logic, and count accuracy (completed 2026-03-13)
-- [ ] **Phase 6: Infrastructure & Security** - Harden Redis, CORS, PgBouncer, BullMQ, and shutdown behavior
+- [x] **Phase 6: Infrastructure & Security** - Harden Redis, CORS, PgBouncer, BullMQ, and shutdown behavior (completed 2026-03-13)
 - [ ] **Phase 7: Code Quality — Tooling** - Install ESLint, Prettier, Vitest, and pre-commit hooks
 - [ ] **Phase 8: Code Quality — Strictness** - TypeScript strict mode, consistent error shapes
 - [ ] **Phase 9: Operational Readiness** - Campaign state recovery, rate limiting, scheduling, and webhooks
@@ -108,7 +108,7 @@ Plans:
   3. The API and all worker processes shut down cleanly on SIGTERM without dropping in-flight jobs
   4. GET /health returns 200 without authentication and confirms both database and Redis connectivity
   5. Redis job data survives a Redis restart (AOF persistence with everysec fsync enabled)
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 06-01-PLAN.md — Redis hardening (noeviction, AOF fsync), PgBouncer docs, counter TTL, SES env var, remove type casts
 - [ ] 06-02-PLAN.md — CORS allowlist, @fastify/helmet, health endpoint DB+Redis check, graceful shutdown Redis cleanup
@@ -197,7 +197,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 3. Data Integrity — Analytics | 2/2 | Complete   | 2026-03-12 |
 | 4. Data Integrity — Error Handling | 2/2 | Complete   | 2026-03-12 |
 | 5. Data Integrity — Tracking & Segments | 2/2 | Complete   | 2026-03-13 |
-| 6. Infrastructure & Security | 1/2 | In Progress|  |
+| 6. Infrastructure & Security | 2/2 | Complete   | 2026-03-13 |
 | 7. Code Quality — Tooling | 0/TBD | Not started | - |
 | 8. Code Quality — Strictness | 0/TBD | Not started | - |
 | 9. Operational Readiness | 0/TBD | Not started | - |
