@@ -12,9 +12,9 @@ export default function NewCampaignPage() {
     if (creating.current) return;
     creating.current = true;
 
-    api.post<Campaign>('/campaigns', { name: 'Untitled Campaign' })
-      .then((campaign) => {
-        router.replace(`/campaigns/${campaign.id}/edit`);
+    api.post<{ data: Campaign }>('/campaigns', { name: 'Untitled Campaign' })
+      .then((res) => {
+        router.replace(`/campaigns/${res.data.id}/edit`);
       })
       .catch(() => {
         router.replace('/campaigns');
