@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import type { Editor, Block } from 'grapesjs';
+import type { Editor } from 'grapesjs';
 import grapesjs from 'grapesjs';
 import 'grapesjs/dist/css/grapes.min.css';
 import mjml from 'grapesjs-mjml';
@@ -217,40 +217,10 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
       editorRef.current.runCommand('mjml-code');
     }, []);
 
-    // Render blocks panel
-    const renderBlocksPanel = () => {
-      if (!ready || !editorRef.current) return null;
-      const blocks = editorRef.current.Blocks.getAll();
-      return (
-        <div className="grid grid-cols-2 gap-1.5 p-2">
-          {blocks.map((block: Block) => (
-            <div
-              key={block.getId()}
-              className="flex flex-col items-center gap-1 p-2 rounded-lg border border-transparent hover:border-blue-300 hover:bg-blue-50 cursor-grab text-center transition-colors"
-              draggable
-              onDragStart={(e) => {
-                if (!editorRef.current) return;
-                editorRef.current.Blocks.dragStart(block, e.nativeEvent);
-              }}
-              onDragEnd={() => {
-                if (!editorRef.current) return;
-                editorRef.current.Blocks.dragStop();
-              }}
-            >
-              <div
-                className="w-8 h-8 flex items-center justify-center text-gray-500"
-                dangerouslySetInnerHTML={{
-                  __html: block.get('media') || '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>',
-                }}
-              />
-              <span className="text-[10px] text-gray-600 leading-tight">
-                {block.getLabel()}
-              </span>
-            </div>
-          ))}
-        </div>
-      );
-    };
+    // Blocks panel - rendered by GrapesJS into a container
+    const renderBlocksPanel = () => (
+      <div id="gjs-blocks-container" className="p-1" />
+    );
 
     // Render style manager panel
     const renderStylesPanel = () => (
@@ -267,16 +237,19 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
       if (!ready || !editorRef.current) return;
       const editor = editorRef.current;
 
+      const blocksEl = document.getElementById('gjs-blocks-container');
+      if (blocksEl && activePanel === 'blocks' && blocksEl.childElementCount === 0) {
+        const blocksView = editor.Blocks.render();
+        blocksEl.appendChild(blocksView);
+      }
+
       const stylesEl = document.getElementById('gjs-styles-container');
-      if (stylesEl) {
-        const smEl = editor.StyleManager.getConfig().appendTo;
-        if (!smEl) {
-          stylesEl.appendChild(editor.StyleManager.render());
-        }
+      if (stylesEl && activePanel === 'styles' && stylesEl.childElementCount === 0) {
+        stylesEl.appendChild(editor.StyleManager.render());
       }
 
       const layersEl = document.getElementById('gjs-layers-container');
-      if (layersEl) {
+      if (layersEl && activePanel === 'layers' && layersEl.childElementCount === 0) {
         layersEl.appendChild(editor.Layers.render());
       }
     }, [ready, activePanel]);
