@@ -27,10 +27,10 @@ export default function NewSegmentPage() {
 
   const saveMutation = useMutation({
     mutationFn: () =>
-      api.post<Segment>('/segments', { name, rules: groups }),
-    onSuccess: (segment) => {
+      api.post<{ data: Segment }>('/segments', { name, rules: groups }),
+    onSuccess: (res) => {
       toast.success('Segment created');
-      router.push(`/segments/${segment.id}`);
+      router.push(`/segments/${res.data.id}`);
     },
     onError: () => {
       toast.error('Failed to create segment');

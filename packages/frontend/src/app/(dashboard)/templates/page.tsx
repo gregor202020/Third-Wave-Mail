@@ -26,10 +26,10 @@ export default function TemplatesPage() {
   });
 
   const cloneMutation = useMutation({
-    mutationFn: (id: number) => api.post<Template>(`/templates/${id}/clone`),
-    onSuccess: (template) => {
+    mutationFn: (id: number) => api.post<{ data: Template }>(`/templates/${id}/clone`),
+    onSuccess: (res) => {
       toast.success('Template cloned');
-      router.push(`/templates/${template.id}/edit`);
+      router.push(`/templates/${res.data.id}/edit`);
     },
     onError: () => {
       toast.error('Failed to clone template');

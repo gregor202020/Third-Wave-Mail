@@ -50,10 +50,10 @@ export default function CampaignsPage() {
   });
 
   const duplicateMutation = useMutation({
-    mutationFn: (id: number) => api.post<Campaign>(`/campaigns/${id}/duplicate`),
-    onSuccess: (campaign) => {
+    mutationFn: (id: number) => api.post<{ data: Campaign }>(`/campaigns/${id}/duplicate`),
+    onSuccess: (res) => {
       toast.success('Campaign duplicated');
-      router.push(`/campaigns/${campaign.id}/edit`);
+      router.push(`/campaigns/${res.data.id}/edit`);
     },
     onError: () => {
       toast.error('Failed to duplicate campaign');
