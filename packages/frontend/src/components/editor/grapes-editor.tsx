@@ -240,17 +240,19 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
       const blocksEl = document.getElementById('gjs-blocks-container');
       if (blocksEl && activePanel === 'blocks' && blocksEl.childElementCount === 0) {
         const blocksView = editor.Blocks.render();
-        blocksEl.appendChild(blocksView);
+        if (blocksView) blocksEl.appendChild(blocksView);
       }
 
       const stylesEl = document.getElementById('gjs-styles-container');
       if (stylesEl && activePanel === 'styles' && stylesEl.childElementCount === 0) {
-        stylesEl.appendChild(editor.StyleManager.render());
+        const smView = editor.StyleManager.render();
+        if (smView) stylesEl.appendChild(smView);
       }
 
       const layersEl = document.getElementById('gjs-layers-container');
       if (layersEl && activePanel === 'layers' && layersEl.childElementCount === 0) {
-        layersEl.appendChild(editor.Layers.render());
+        const lView = editor.Layers.render();
+        if (lView) layersEl.appendChild(lView);
       }
     }, [ready, activePanel]);
 
