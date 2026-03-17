@@ -207,7 +207,7 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
     const tagsArray = typeof tags === 'string'
       ? tags.split(',').map(t => t.trim()).filter(Boolean)
       : Array.isArray(tags) ? tags : [];
-    onSave({ ...apiFields, tags: tagsArray });
+    onSave({ ...apiFields, tags: tagsArray as unknown as string });
   }, [onSave]);
 
   const toggleSection = (idx: number) => {
