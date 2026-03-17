@@ -4,7 +4,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/workers/package.json packages/workers/
-RUN npm install --workspace=packages/shared --workspace=packages/workers
+RUN npm pkg delete scripts.prepare && npm install --workspace=packages/shared --workspace=packages/workers
 
 COPY tsconfig.base.json ./
 COPY packages/shared/ packages/shared/
