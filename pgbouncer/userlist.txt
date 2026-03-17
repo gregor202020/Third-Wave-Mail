@@ -1,1 +1,1 @@
-"twmail" "twmail_dev_password"
+"twmail" "CHANGE_ME_TO_POSTGRES_PASSWORD"
