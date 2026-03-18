@@ -206,7 +206,8 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
       });
 
       // When an mj-image is added with no src, auto-open asset manager
-      editor.on('component:add', (component: { get: (k: string) => string; getAttributes: () => Record<string, string>; set: (k: string, v: Record<string, string>) => void }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      editor.on('component:add', (component: any) => {
         const type = component.get('type');
         if (type === 'mj-image' || type === 'image') {
           const attrs = component.getAttributes();
