@@ -125,20 +125,15 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
       setUploading(false);
     }, []);
 
-    // Insert image into editor canvas
-    const insertImage = useCallback((url: string) => {
+    // Copy image URL to clipboard so user can paste into image src
+    const copyImageUrl = useCallback((url: string) => {
+      navigator.clipboard.writeText(url).catch(() => {});
+    }, []);
+
+    // Open the GrapesJS asset manager
+    const openAssetManager = useCallback(() => {
       if (!editorRef.current) return;
-      const selected = editorRef.current.getSelected();
-      if (selected && selected.get('type') === 'mj-image') {
-        selected.set('attributes', { ...selected.getAttributes(), src: url });
-      } else {
-        // Add an mj-image component to the end of the first section
-        const wrapper = editorRef.current.getWrapper();
-        const body = wrapper?.find('mj-body')?.[0] || wrapper;
-        if (body) {
-          body.append(`<mj-section><mj-column><mj-image src="${url}" alt="Image" padding="10px" /></mj-column></mj-section>`);
-        }
-      }
+      editorRef.current.runCommand('open-assets');
     }, []);
 
     useEffect(() => {
@@ -374,11 +369,21 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
 
                 {activePanel === 'images' && (
                   <div className="p-3 space-y-3">
+                    {/* Instructions */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5 text-[10px] text-blue-700 leading-relaxed">
+                      <strong>How to add images:</strong>
+                      <ol className="list-decimal ml-3 mt-1 space-y-0.5">
+                        <li>Upload images below</li>
+                        <li>Drag an <strong>Image</strong> block from the Blocks tab onto your email</li>
+                        <li>Double-click the image placeholder to pick from your uploads</li>
+                      </ol>
+                    </div>
+
                     {/* Upload area */}
                     <label className="flex flex-col items-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors">
                       <Image className="w-6 h-6 text-gray-400" />
                       <span className="text-[11px] text-gray-500 font-medium">
-                        {uploading ? 'Uploading...' : 'Click or drag to upload'}
+                        {uploading ? 'Uploading...' : 'Click to upload images'}
                       </span>
                       <span className="text-[9px] text-gray-400">PNG, JPG, GIF, WebP up to 25MB</span>
                       <input
@@ -391,23 +396,39 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
                       />
                     </label>
 
+                    {/* Open asset manager button */}
+                    <button
+                      className="w-full py-2 text-[11px] font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                      onClick={openAssetManager}
+                    >
+                      Open Image Picker
+                    </button>
+
                     {/* Image grid */}
                     {uploadedImages.length > 0 ? (
-                      <div className="grid grid-cols-2 gap-2">
-                        {uploadedImages.map(img => (
-                          <button
-                            key={img.id}
-                            className="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 hover:border-blue-400 hover:ring-2 hover:ring-blue-200 transition-all"
-                            onClick={() => insertImage(img.url)}
-                            title={`Insert ${img.filename}`}
-                          >
-                            <img src={img.url} alt={img.filename} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                              <span className="text-white text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity">Insert</span>
+                      <>
+                        <p className="text-[10px] text-gray-500 font-medium">Uploaded Images ({uploadedImages.length})</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {uploadedImages.map(img => (
+                            <div
+                              key={img.id}
+                              className="group relative aspect-square rounded-lg overflow-hidden border border-gray-200"
+                            >
+                              <img src={img.url} alt={img.filename} className="w-full h-full object-cover" />
+                              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-1.5 pt-4">
+                                <p className="text-[9px] text-white truncate">{img.filename}</p>
+                              </div>
+                              <button
+                                className="absolute top-1 right-1 bg-white/90 hover:bg-white text-[9px] text-gray-600 px-1.5 py-0.5 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => copyImageUrl(img.url)}
+                                title="Copy URL"
+                              >
+                                Copy URL
+                              </button>
                             </div>
-                          </button>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      </>
                     ) : (
                       <p className="text-[11px] text-gray-400 text-center py-4">No images uploaded yet</p>
                     )}
