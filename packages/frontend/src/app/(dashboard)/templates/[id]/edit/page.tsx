@@ -87,7 +87,7 @@ export default function TemplateEditorPage() {
       : template?.content_html || undefined;
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Top bar */}
       <header className="h-[48px] bg-white border-b border-gray-200 flex items-center px-4 gap-3 shrink-0">
         <Button

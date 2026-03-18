@@ -289,7 +289,7 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
     ];
 
     return (
-      <div className="flex flex-col h-full bg-[#1a1a2e]">
+      <div className="flex flex-col h-full overflow-hidden bg-[#1a1a2e]">
         {/* Toolbar */}
         <div className="flex items-center justify-between h-10 px-3 bg-[#16213e] border-b border-white/10 shrink-0">
           <div className="flex items-center gap-1">
@@ -417,7 +417,7 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
           )}
 
           {/* Canvas */}
-          <div className="flex-1 min-w-0 relative" ref={containerRef} />
+          <div className="flex-1 min-w-0 min-h-0 relative overflow-hidden" ref={containerRef} />
         </div>
       </div>
     );
