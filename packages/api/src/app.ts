@@ -103,6 +103,32 @@ export async function buildApp() {
   await app.register(userRoutes, { prefix: '/api/users' });
   await app.register(settingsRoutes, { prefix: '/api/settings' });
 
+  // Static asset serving (no auth - images need to be publicly accessible in emails)
+  app.get<{ Params: { filename: string } }>('/assets/:filename', async (request, reply) => {
+    const { filename } = request.params;
+    // Sanitize filename to prevent directory traversal
+    const safe = filename.replace(/[^a-zA-Z0-9._-]/g, '');
+    if (safe !== filename || filename.includes('..')) {
+      return reply.status(400).send({ error: 'Invalid filename' });
+    }
+    const { join } = await import('path');
+    const { createReadStream, existsSync } = await import('fs');
+    const filePath = join(cfg.ASSETS_DIR, safe);
+    if (!existsSync(filePath)) {
+      return reply.status(404).send({ error: 'Not found' });
+    }
+    const ext = safe.split('.').pop()?.toLowerCase();
+    const mimeMap: Record<string, string> = {
+      jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+      gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
+      pdf: 'application/pdf', mp4: 'video/mp4',
+    };
+    const contentType = mimeMap[ext ?? ''] || 'application/octet-stream';
+    reply.header('Content-Type', contentType);
+    reply.header('Cache-Control', 'public, max-age=31536000, immutable');
+    return reply.send(createReadStream(filePath));
+  });
+
   // Tracking routes (no auth, lightweight)
   await app.register(trackingRoutes);
 

@@ -56,7 +56,7 @@ export const assetRoutes: FastifyPluginAsync = async (app) => {
     await mkdir(cfg.ASSETS_DIR, { recursive: true });
     await writeFile(join(cfg.ASSETS_DIR, storedFilename), buffer);
 
-    const url = `${cfg.BASE_URL}/assets/${storedFilename}`;
+    const url = `/assets/${storedFilename}`;
 
     const db = getDb();
     const asset = await db
