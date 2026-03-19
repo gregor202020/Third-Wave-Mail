@@ -13,7 +13,7 @@ const createSchema = z.object({
   from_email: z.union([z.string().email(), z.literal('')]).optional(),
   reply_to: z.union([z.string().email(), z.literal('')]).optional(),
   template_id: z.number().optional().nullable(),
-  content_html: z.string().optional(),
+  content_html: z.string().optional().nullable(),
   content_json: z.record(z.unknown()).optional().nullable(),
   segment_id: z.number().optional().nullable(),
   list_id: z.number().optional().nullable(),
@@ -32,7 +32,7 @@ const createSchema = z.object({
   send_time_optimization: z.boolean().optional(),
 });
 
-const updateSchema = createSchema.partial();
+const updateSchema = createSchema.partial().strip();
 
 const scheduleSchema = z.object({
   scheduled_at: z.string().datetime(),
