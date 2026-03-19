@@ -13,7 +13,7 @@ const createSchema = z.object({
   from_email: z.union([z.string().email(), z.literal('')]).optional(),
   reply_to: z.union([z.string().email(), z.literal('')]).optional(),
   template_id: z.number().optional().nullable(),
-  content_html: z.string().optional().nullable(),
+  content_html: z.string().optional(),
   content_json: z.record(z.unknown()).optional().nullable(),
   segment_id: z.number().optional().nullable(),
   list_id: z.number().optional().nullable(),
