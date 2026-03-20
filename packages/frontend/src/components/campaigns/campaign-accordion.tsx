@@ -105,7 +105,7 @@ function getInitialFormData(campaign: Campaign): CampaignFormData {
     timezone: campaign.timezone ?? 'Australia/Sydney',
     ab_test_enabled: campaign.ab_test_enabled ?? false,
     ab_test_variable: (abConfig.variable as string) ?? 'subject',
-    ab_test_variants: (abConfig.variants as Array<{ name: string; value: string }>) ?? [
+    ab_test_variants: Array.isArray(abConfig.variants) ? abConfig.variants as Array<{ name: string; value: string }> : [
       { name: 'Variant A', value: '' },
       { name: 'Variant B', value: '' },
     ],
@@ -120,7 +120,7 @@ function getInitialFormData(campaign: Campaign): CampaignFormData {
     resend_engaged_only: (resendConfig.engaged_only as boolean) ?? false,
     resend_max: (resendConfig.max as number) ?? 1,
     reply_to: campaign.reply_to ?? '',
-    tags: campaign.tags ?? '',
+    tags: Array.isArray(campaign.tags) ? (campaign.tags as string[]).join(', ') : (campaign.tags ?? ''),
     utm_enabled: campaign.utm_enabled ?? false,
     utm_source: campaign.utm_source ?? 'twmail',
     utm_medium: campaign.utm_medium ?? 'email',
@@ -187,8 +187,8 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
     enabled: openSection === 1,
   });
 
-  const segments = segmentsData?.data ?? [];
-  const lists = listsData?.data ?? [];
+  const segments = Array.isArray(segmentsData?.data) ? segmentsData.data : [];
+  const lists = Array.isArray(listsData?.data) ? listsData.data : [];
 
   const formDataRef = useRef(formData);
   formDataRef.current = formData;
@@ -219,7 +219,7 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
   const recipientsValid = !!(formData.segment_id || formData.list_id);
   const designValid = !!campaign.content_html;
   const schedulingValid = formData.schedule_type === 'now' || !!(formData.scheduled_date && formData.scheduled_time);
-  const abValid = !formData.ab_test_enabled || formData.ab_test_variants.every((v) => v.value);
+  const abValid = !formData.ab_test_enabled || (Array.isArray(formData.ab_test_variants) && formData.ab_test_variants.every((v) => v.value));
   const resendValid = !formData.resend_enabled || !!formData.resend_delay;
 
   const allValid = setupValid && recipientsValid && designValid && schedulingValid && abValid && resendValid;
@@ -798,7 +798,7 @@ function DesignSection({ campaign, onSave, isSaving }: DesignSectionProps) {
   // Editor is open
   if (showEditor) {
     return (
-      <div className="mt-2 bg-card border border-card-border rounded-[14px] p-5 space-y-3">
+      <div className="mt-2 bg-card border border-card-border rounded-[14px] p-5 space-y-3 overflow-hidden">
         {/* Toolbar row */}
         <div className="flex items-center justify-between">
           <Button
@@ -830,7 +830,7 @@ function DesignSection({ campaign, onSave, isSaving }: DesignSectionProps) {
         </div>
 
         {/* Editor */}
-        <div style={{ minHeight: 600 }}>
+        <div style={{ minHeight: 600, maxWidth: '100%', overflow: 'hidden' }}>
           <GrapesEditor
             ref={editorRef}
             initialContent={editorContent}

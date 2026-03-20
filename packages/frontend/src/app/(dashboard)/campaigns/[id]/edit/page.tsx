@@ -69,7 +69,7 @@ export default function EditCampaignPage({ params }: { params: Promise<{ id: str
         }
       />
       <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-[800px] mx-auto">
+        <div className="max-w-[800px] mx-auto overflow-hidden">
           {isLoading || !campaign ? (
             <TableSkeleton rows={6} cols={1} />
           ) : (
