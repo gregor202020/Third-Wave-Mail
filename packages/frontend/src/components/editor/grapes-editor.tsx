@@ -533,13 +533,24 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
       setSelectedAttrs(prev => ({ ...prev, [key]: value }));
     }, []);
 
+    // Tags that should become GrapesJS 'text' type for inline editing
+    const TEXT_TAGS = new Set([
+      'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'div',
+      'td', 'th', 'li', 'blockquote', 'pre', 'label',
+      'b', 'i', 'em', 'strong', 'u', 'a',
+    ]);
+
     // Recursively make imported HTML components editable
     const makeEditable = useCallback((comp: GjsComponent) => {
       if (!comp) return;
       const type = comp.get('type') || '';
       const tagName = (comp.get('tagName') || '').toLowerCase();
-      // Make text-containing elements inline-editable
-      if (!type.startsWith('mj-') && (EDITABLE_HTML_TYPES.has(type) || EDITABLE_TAG_NAMES.has(tagName))) {
+      // Convert text-containing elements to GrapesJS 'text' type for inline RTE
+      if (!type.startsWith('mj-') && (type === 'default' || type === 'text' || type === '') && TEXT_TAGS.has(tagName)) {
+        comp.set({ type: 'text', editable: true });
+      }
+      // Links should keep link type but be editable
+      if (type === 'link') {
         comp.set('editable', true);
       }
       // Recurse into children
