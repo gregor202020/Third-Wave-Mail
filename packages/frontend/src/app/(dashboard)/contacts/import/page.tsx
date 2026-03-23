@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Upload, ClipboardPaste, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Upload, ClipboardPaste, CheckCircle2, AlertCircle, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { api } from '@/lib/api-client';
@@ -9,7 +9,15 @@ import { queryKeys } from '@/lib/query-keys';
 import { TopBar } from '@/components/layout/top-bar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { ImportMapper } from '@/components/contacts/import-mapper';
 import { ImportStatus } from '@/types';
 import type { Import } from '@/types';
@@ -20,6 +28,11 @@ interface ImportResponse {
   data: Import & { detected_columns?: string[] };
 }
 
+interface ListItem {
+  id: number;
+  name: string;
+}
+
 export default function ContactImportPage() {
   const [stage, setStage] = useState<ImportStage>('input');
   const [importId, setImportId] = useState<number | null>(null);
@@ -28,6 +41,27 @@ export default function ContactImportPage() {
   const [submitting, setSubmitting] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // List selection state
+  const [listMode, setListMode] = useState<'existing' | 'new' | 'none'>('none');
+  const [selectedListId, setSelectedListId] = useState<string>('');
+  const [newListName, setNewListName] = useState('');
+
+  // Fetch existing lists
+  const { data: lists } = useQuery({
+    queryKey: queryKeys.lists.list(),
+    queryFn: () => api.get<{ data: ListItem[] }>('/lists').then((r) => r.data),
+  });
+
+  const getListParams = (): { list_id?: number; new_list_name?: string } => {
+    if (listMode === 'existing' && selectedListId) {
+      return { list_id: Number(selectedListId) };
+    }
+    if (listMode === 'new' && newListName.trim()) {
+      return { new_list_name: newListName.trim() };
+    }
+    return {};
+  };
 
   // Poll import status
   const { data: importData } = useQuery({
@@ -44,7 +78,6 @@ export default function ContactImportPage() {
     importData &&
     importData.status !== ImportStatus.PROCESSING
   ) {
-    // Move to done stage on next render
     if (stage === 'processing') {
       setTimeout(() => setStage('done'), 0);
     }
@@ -67,8 +100,10 @@ export default function ContactImportPage() {
     }
     setSubmitting(true);
     try {
+      const listParams = getListParams();
       const res = await api.post<ImportResponse>('/contacts/import/paste', {
         text: pasteText,
+        ...listParams,
       });
       setImportId(res.data.id);
       const columns = res.data.detected_columns;
@@ -92,6 +127,15 @@ export default function ContactImportPage() {
     try {
       const formData = new FormData();
       formData.append('file', file);
+
+      const listParams = getListParams();
+      if (listParams.list_id) {
+        formData.append('list_id', String(listParams.list_id));
+      }
+      if (listParams.new_list_name) {
+        formData.append('new_list_name', listParams.new_list_name);
+      }
+
       const res = await api.upload<ImportResponse>('/contacts/import/csv', formData);
       setImportId(res.data.id);
       const columns = res.data.detected_columns;
@@ -167,82 +211,179 @@ export default function ContactImportPage() {
 
           {/* Input stage */}
           {stage === 'input' && (
-            <Tabs defaultValue="paste">
-              <TabsList>
-                <TabsTrigger value="paste">
-                  <ClipboardPaste className="w-3.5 h-3.5" />
-                  Paste
-                </TabsTrigger>
-                <TabsTrigger value="csv">
-                  <Upload className="w-3.5 h-3.5" />
-                  Upload CSV
-                </TabsTrigger>
-              </TabsList>
+            <>
+              {/* List selection section */}
+              <div className="bg-card border border-card-border rounded-[14px] p-5 mb-5">
+                <h3 className="text-sm font-semibold text-text-primary mb-1">
+                  Add to List
+                </h3>
+                <p className="text-xs text-text-muted mb-4">
+                  Optionally assign imported contacts to a list.
+                </p>
 
-              <TabsContent value="paste" className="pt-4">
-                <div className="bg-card border border-card-border rounded-[14px] p-5">
-                  <p className="text-xs text-text-muted mb-3">
-                    Paste email addresses or tab/comma-separated data with headers.
-                  </p>
-                  <Textarea
-                    placeholder={"email,first_name,last_name\njohn@example.com,John,Doe\njane@example.com,Jane,Smith"}
-                    className="min-h-[200px] font-mono text-xs"
-                    value={pasteText}
-                    onChange={(e) => setPasteText(e.target.value)}
-                  />
-                  <div className="mt-3 flex justify-end">
-                    <Button
-                      className="bg-tw-blue hover:bg-tw-blue-dark"
-                      size="sm"
-                      onClick={handlePasteSubmit}
-                      disabled={submitting}
-                    >
-                      {submitting ? 'Importing...' : 'Import'}
-                    </Button>
+                <div className="space-y-3">
+                  {/* Existing list dropdown */}
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      id="list-existing"
+                      name="list-mode"
+                      checked={listMode === 'existing'}
+                      onChange={() => setListMode('existing')}
+                      className="accent-tw-blue"
+                    />
+                    <label htmlFor="list-existing" className="text-xs text-text-primary font-medium flex-1">
+                      <Select
+                        value={selectedListId}
+                        onValueChange={(val) => {
+                          setSelectedListId(val);
+                          setListMode('existing');
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select existing list..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {lists?.map((list) => (
+                            <SelectItem key={list.id} value={String(list.id)}>
+                              {list.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </label>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-card-border" />
+                    <span className="text-[10px] uppercase tracking-wider text-text-muted font-medium">
+                      or
+                    </span>
+                    <div className="flex-1 h-px bg-card-border" />
+                  </div>
+
+                  {/* New list input */}
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      id="list-new"
+                      name="list-mode"
+                      checked={listMode === 'new'}
+                      onChange={() => setListMode('new')}
+                      className="accent-tw-blue"
+                    />
+                    <label htmlFor="list-new" className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Plus className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                        <Input
+                          placeholder="Create new list..."
+                          value={newListName}
+                          onChange={(e) => {
+                            setNewListName(e.target.value);
+                            if (e.target.value) setListMode('new');
+                          }}
+                          className="flex-1"
+                        />
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* No list option */}
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      id="list-none"
+                      name="list-mode"
+                      checked={listMode === 'none'}
+                      onChange={() => setListMode('none')}
+                      className="accent-tw-blue"
+                    />
+                    <label htmlFor="list-none" className="text-xs text-text-muted">
+                      Don&apos;t add to any list
+                    </label>
                   </div>
                 </div>
-              </TabsContent>
+              </div>
 
-              <TabsContent value="csv" className="pt-4">
-                <div
-                  className={`bg-card border-2 border-dashed rounded-[14px] p-10 text-center transition-colors ${
-                    dragOver
-                      ? 'border-tw-blue bg-tw-blue-light'
-                      : 'border-card-border'
-                  }`}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOver(true);
-                  }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={handleDrop}
-                >
-                  <Upload className="w-8 h-8 text-text-muted mx-auto mb-3" />
-                  <p className="text-sm text-text-primary font-medium mb-1">
-                    Drag & drop a CSV file here
-                  </p>
-                  <p className="text-xs text-text-muted mb-4">or click to browse</p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={submitting}
-                  >
-                    {submitting ? 'Uploading...' : 'Choose File'}
-                  </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".csv,text/csv"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileUpload(file);
+              {/* Paste / CSV tabs */}
+              <Tabs defaultValue="paste">
+                <TabsList>
+                  <TabsTrigger value="paste">
+                    <ClipboardPaste className="w-3.5 h-3.5" />
+                    Paste
+                  </TabsTrigger>
+                  <TabsTrigger value="csv">
+                    <Upload className="w-3.5 h-3.5" />
+                    Upload CSV
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="paste" className="pt-4">
+                  <div className="bg-card border border-card-border rounded-[14px] p-5">
+                    <p className="text-xs text-text-muted mb-3">
+                      Paste email addresses or tab/comma-separated data with headers.
+                    </p>
+                    <Textarea
+                      placeholder={"email,first_name,last_name\njohn@example.com,John,Doe\njane@example.com,Jane,Smith"}
+                      className="min-h-[200px] font-mono text-xs"
+                      value={pasteText}
+                      onChange={(e) => setPasteText(e.target.value)}
+                    />
+                    <div className="mt-3 flex justify-end">
+                      <Button
+                        className="bg-tw-blue hover:bg-tw-blue-dark"
+                        size="sm"
+                        onClick={handlePasteSubmit}
+                        disabled={submitting}
+                      >
+                        {submitting ? 'Importing...' : 'Import'}
+                      </Button>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="csv" className="pt-4">
+                  <div
+                    className={`bg-card border-2 border-dashed rounded-[14px] p-10 text-center transition-colors ${
+                      dragOver
+                        ? 'border-tw-blue bg-tw-blue-light'
+                        : 'border-card-border'
+                    }`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOver(true);
                     }}
-                  />
-                </div>
-              </TabsContent>
-            </Tabs>
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={handleDrop}
+                  >
+                    <Upload className="w-8 h-8 text-text-muted mx-auto mb-3" />
+                    <p className="text-sm text-text-primary font-medium mb-1">
+                      Drag & drop a CSV file here
+                    </p>
+                    <p className="text-xs text-text-muted mb-4">or click to browse</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={submitting}
+                    >
+                      {submitting ? 'Uploading...' : 'Choose File'}
+                    </Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".csv,text/csv"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(file);
+                      }}
+                    />
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </>
           )}
 
           {/* Mapping stage */}
@@ -251,6 +392,8 @@ export default function ContactImportPage() {
               importId={importId}
               detectedColumns={detectedColumns}
               onConfirm={handleMappingConfirm}
+              listId={listMode === 'existing' && selectedListId ? Number(selectedListId) : undefined}
+              newListName={listMode === 'new' && newListName.trim() ? newListName.trim() : undefined}
             />
           )}
 
