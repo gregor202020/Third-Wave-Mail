@@ -146,6 +146,75 @@ const PROP_DEFS: Record<string, PropField[]> = {
   ],
 };
 
+// Property definitions for standard HTML elements (imported/pasted HTML)
+const HTML_PROP_DEFS: Record<string, PropField[]> = {
+  'text': [
+    { key: 'style:font-size', label: 'Font Size', type: 'text', placeholder: '16px' },
+    { key: 'style:color', label: 'Text Color', type: 'color' },
+    { key: 'style:font-weight', label: 'Font Weight', type: 'select', options: [
+      { value: 'normal', label: 'Normal' },
+      { value: 'bold', label: 'Bold' },
+    ]},
+    { key: 'style:text-align', label: 'Align', type: 'select', options: ALIGN_OPTIONS },
+    { key: 'style:line-height', label: 'Line Height', type: 'text', placeholder: '1.6' },
+    { key: 'style:padding', label: 'Padding', type: 'text', placeholder: '10px' },
+    { key: 'style:background-color', label: 'Background', type: 'color' },
+  ],
+  'image': [
+    { key: 'src', label: 'Image URL', type: 'url', placeholder: 'https://...' },
+    { key: 'alt', label: 'Alt Text', type: 'text', placeholder: 'Describe image' },
+    { key: 'style:width', label: 'Width', type: 'text', placeholder: '100%' },
+    { key: 'style:border-radius', label: 'Roundness', type: 'text', placeholder: '0px' },
+  ],
+  'link': [
+    { key: 'href', label: 'Link URL', type: 'url', placeholder: 'https://...' },
+    { key: 'style:color', label: 'Link Color', type: 'color' },
+    { key: 'style:font-size', label: 'Font Size', type: 'text', placeholder: '16px' },
+  ],
+  'cell': [
+    { key: 'style:background-color', label: 'Background', type: 'color' },
+    { key: 'style:padding', label: 'Padding', type: 'text', placeholder: '10px' },
+    { key: 'style:text-align', label: 'Align', type: 'select', options: ALIGN_OPTIONS },
+    { key: 'style:vertical-align', label: 'V-Align', type: 'select', options: [
+      { value: 'top', label: 'Top' },
+      { value: 'middle', label: 'Middle' },
+      { value: 'bottom', label: 'Bottom' },
+    ]},
+    { key: 'style:width', label: 'Width', type: 'text', placeholder: '50%' },
+    { key: 'style:border', label: 'Border', type: 'text', placeholder: '1px solid #ccc' },
+  ],
+  'table': [
+    { key: 'style:width', label: 'Width', type: 'text', placeholder: '100%' },
+    { key: 'style:background-color', label: 'Background', type: 'color' },
+    { key: 'style:border-collapse', label: 'Border Collapse', type: 'select', options: [
+      { value: 'collapse', label: 'Collapse' },
+      { value: 'separate', label: 'Separate' },
+    ]},
+  ],
+  'row': [
+    { key: 'style:background-color', label: 'Background', type: 'color' },
+  ],
+  'default': [
+    { key: 'style:color', label: 'Text Color', type: 'color' },
+    { key: 'style:background-color', label: 'Background', type: 'color' },
+    { key: 'style:padding', label: 'Padding', type: 'text', placeholder: '10px' },
+    { key: 'style:font-size', label: 'Font Size', type: 'text', placeholder: '16px' },
+    { key: 'style:text-align', label: 'Align', type: 'select', options: ALIGN_OPTIONS },
+  ],
+};
+
+// HTML element types that should allow inline text editing
+const EDITABLE_HTML_TYPES = new Set([
+  'text', 'default', 'textnode', 'label',
+]);
+
+// Tag names that should be inline-editable
+const EDITABLE_TAG_NAMES = new Set([
+  'p', 'span', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+  'td', 'th', 'li', 'a', 'b', 'i', 'em', 'strong', 'u',
+  'label', 'blockquote', 'pre', 'code',
+]);
+
 const TYPE_LABELS: Record<string, string> = {
   'mj-body': 'Email Body',
   'mj-section': 'Section',
@@ -160,6 +229,13 @@ const TYPE_LABELS: Record<string, string> = {
   'mj-raw': 'Raw HTML',
   'mj-navbar': 'Navbar',
   'mj-navbar-link': 'Nav Link',
+  'text': 'Text',
+  'default': 'Element',
+  'image': 'Image',
+  'link': 'Link',
+  'table': 'Table',
+  'row': 'Table Row',
+  'cell': 'Table Cell',
 };
 
 const TYPE_ICONS: Record<string, typeof Type> = {
@@ -437,10 +513,16 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
       setHtmlEditorCode('');
     }, [htmlEditorCode]);
 
-    // Update attribute on selected component
+    // Update attribute on selected component (supports style: prefix for inline styles)
     const updateAttr = useCallback((key: string, value: string) => {
       const comp = selectedRef.current;
       if (!comp) return;
+      if (key.startsWith('style:')) {
+        const styleProp = key.slice(6);
+        comp.addStyle({ [styleProp]: value });
+        setSelectedAttrs((prev: Record<string, string>) => ({ ...prev, [key]: value }));
+        return;
+      }
       const attrs = comp.getAttributes();
       if (value) {
         attrs[key] = value;
@@ -448,8 +530,23 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
         delete attrs[key];
       }
       comp.set('attributes', { ...attrs });
-      // Sync local state
       setSelectedAttrs(prev => ({ ...prev, [key]: value }));
+    }, []);
+
+    // Recursively make imported HTML components editable
+    const makeEditable = useCallback((comp: GjsComponent) => {
+      if (!comp) return;
+      const type = comp.get('type') || '';
+      const tagName = (comp.get('tagName') || '').toLowerCase();
+      // Make text-containing elements inline-editable
+      if (!type.startsWith('mj-') && (EDITABLE_HTML_TYPES.has(type) || EDITABLE_TAG_NAMES.has(tagName))) {
+        comp.set('editable', true);
+      }
+      // Recurse into children
+      const children = comp.components?.();
+      if (children) {
+        children.forEach((child: GjsComponent) => makeEditable(child));
+      }
     }, []);
 
     // Initialize GrapesJS
@@ -569,6 +666,10 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
         editor.setComponents(content);
       }
 
+      // Make imported HTML components editable (inline text editing, etc.)
+      const wrapper = editor.getWrapper();
+      if (wrapper) makeEditable(wrapper);
+
       // Load existing images into asset manager
       fetch('/api/proxy/assets?page=1&per_page=100', { credentials: 'include' })
         .then(r => r.ok ? r.json() : null)
@@ -601,13 +702,22 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
         }
         selectedRef.current = comp;
         const attrs = comp.getAttributes();
-        setSelectedAttrs({ ...attrs });
+        // For non-MJML components, also grab inline styles into attrs
+        const combinedAttrs: Record<string, string> = { ...attrs };
+        if (!type.startsWith('mj-')) {
+          const styles = comp.getStyle();
+          if (styles && typeof styles === 'object') {
+            for (const [k, v] of Object.entries(styles)) {
+              if (typeof v === 'string') combinedAttrs[`style:${k}`] = v;
+            }
+          }
+        }
+        setSelectedAttrs(combinedAttrs);
         // Detect video blocks (mj-image with data-video attribute)
         const isVideo = type === 'mj-image' && attrs['data-video'] === 'true';
         setIsVideoBlock(isVideo);
         if (isVideo) {
           setSelectedType('mj-video');
-          // Extract current YouTube URL from href
           setVideoUrl(attrs.href || '');
         } else {
           setSelectedType(type);
@@ -649,6 +759,10 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
           if (!attrs.href || attrs.href === '#') {
             component.set('attributes', { ...attrs, href: 'https://' });
           }
+        }
+        // Make non-MJML components editable
+        if (!type.startsWith('mj-')) {
+          makeEditable(component);
         }
       });
 
@@ -718,7 +832,7 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
       }
     }, [ready, leftTab]);
 
-    const fields = PROP_DEFS[selectedType] || [];
+    const fields = PROP_DEFS[selectedType] || HTML_PROP_DEFS[selectedType] || (selectedType && !selectedType.startsWith('mj-') ? HTML_PROP_DEFS['default'] : []) || [];
     const Icon = TYPE_ICONS[selectedType] || Square;
 
     const leftTabs: { key: LeftTab; label: string; icon: typeof LayoutGrid }[] = [
