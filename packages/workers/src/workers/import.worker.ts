@@ -66,7 +66,7 @@ export function createImportWorker(): Worker {
           .updateTable('imports')
           .set({
             status: ImportStatus.FAILED,
-            errors: [{ row: 0, message: parseErr instanceof Error ? parseErr.message : 'Unknown parse error' }],
+            errors: JSON.stringify([{ row: 0, message: parseErr instanceof Error ? parseErr.message : 'Unknown parse error' }]) as unknown as Record<string, unknown>[],
           })
           .where('id', '=', importId)
           .execute();
@@ -258,7 +258,7 @@ export function createImportWorker(): Worker {
           new_contacts: newContacts,
           updated_contacts: updatedContacts,
           skipped,
-          errors: errors.length > 0 ? (errors as unknown as Record<string, unknown>[]) : [],
+          errors: JSON.stringify(errors.length > 0 ? errors : []) as unknown as Record<string, unknown>[],
         })
         .where('id', '=', importId)
         .execute();
@@ -285,7 +285,7 @@ export function createImportWorker(): Worker {
       db.updateTable('imports')
         .set({
           status: ImportStatus.FAILED,
-          errors: [{ row: 0, message: err?.message ?? 'Unknown worker error' }],
+          errors: JSON.stringify([{ row: 0, message: err?.message ?? 'Unknown worker error' }]) as unknown as Record<string, unknown>[],
         })
         .where('id', '=', job.data.importId)
         .execute()
@@ -330,12 +330,22 @@ function parsePasteData(data: string): Array<Record<string, string>> {
  * arrays where keys are the CSV column headers.
  */
 function parseCsvData(data: string, _mapping: Record<string, string>): Array<Record<string, string>> {
-  const records = csvParse(data, {
+  // Normalize line endings before parsing
+  const normalized = data.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const records = csvParse(normalized, {
     columns: true,
     skip_empty_lines: true,
     trim: true,
     relax_column_count: true,
+    relax_quotes: true,
   }) as Array<Record<string, string>>;
 
-  return records;
+  // Lowercase all keys to match the mapping from the API
+  return records.map((row) => {
+    const lowered: Record<string, string> = {};
+    for (const [key, value] of Object.entries(row)) {
+      lowered[key.toLowerCase().trim()] = value;
+    }
+    return lowered;
+  });
 }
