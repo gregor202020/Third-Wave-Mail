@@ -395,6 +395,8 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
       },
       getJson: () => {
         if (!editorRef.current) return '{}';
+        // For raw HTML, don't save MJML project data — it would wrap the HTML in MJML
+        if (isRawHtmlRef.current) return '{}';
         return JSON.stringify(editorRef.current.getProjectData());
       },
     }));
