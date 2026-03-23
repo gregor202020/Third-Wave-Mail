@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
+import { parse as csvParseSync } from 'csv-parse/sync';
 import { getDb, getRedis, ErrorCode, ImportType, ImportStatus } from '@twmail/shared';
 import { Queue, type ConnectionOptions } from 'bullmq';
 import { requireAuth } from '../middleware/auth.js';
@@ -35,6 +36,12 @@ const AUTO_FIELD_MAP: Record<string, string> = {
   phone: 'phone',
   telephone: 'phone',
   mobile: 'phone',
+  mobilenumber: 'phone',
+  mobile_number: 'phone',
+  phonenumber: 'phone',
+  phone_number: 'phone',
+  cell: 'phone',
+  cellphone: 'phone',
   company: 'company',
   organization: 'company',
   org: 'company',
@@ -197,6 +204,8 @@ function firstRowIsHeader(values: string[]): boolean {
 
 function parsePastedText(text: string): Array<Record<string, string>> {
   const lines = text
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
     .trim()
     .split('\n')
     .map((l) => l.trim())
@@ -269,27 +278,34 @@ function parseCsvLine(line: string, delimiter: string): string[] {
 }
 
 function parseCsv(content: string): Array<Record<string, string>> {
-  const lines = content
-    .trim()
-    .split('\n')
-    .map((l) => l.trim())
-    .filter(Boolean);
-  if (lines.length < 1) return [];
+  // Normalize line endings
+  const normalized = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
-  const firstLine = lines[0]!;
+  // Detect delimiter from first line
+  const firstLine = normalized.split('\n')[0] ?? '';
   let delimiter = ',';
   if (firstLine.includes('\t')) delimiter = '\t';
-  else if (firstLine.includes(';')) delimiter = ';';
-  else if (firstLine.includes('|')) delimiter = '|';
+  else if (firstLine.includes(';') && !firstLine.includes(',')) delimiter = ';';
+  else if (firstLine.includes('|') && !firstLine.includes(',')) delimiter = '|';
 
-  const firstValues = parseCsvLine(firstLine, delimiter).map((h) => h.trim());
-  const isHeader = firstRowIsHeader(firstValues);
+  // Use csv-parse which handles multi-line quoted fields, escapes, etc.
+  const records = csvParseSync(normalized, {
+    delimiter,
+    columns: false,
+    skip_empty_lines: true,
+    relax_column_count: true,
+    relax_quotes: true,
+    trim: true,
+  }) as string[][];
+
+  if (records.length < 1) return [];
+
+  const firstRow = records[0]!;
+  const isHeader = firstRowIsHeader(firstRow);
 
   if (isHeader) {
-    if (lines.length < 2) return [];
-    const headers = firstValues.map((h) => h.toLowerCase());
-    return lines.slice(1).map((line) => {
-      const values = parseCsvLine(line, delimiter);
+    const headers = firstRow.map((h) => h.toLowerCase().trim());
+    return records.slice(1).map((values) => {
       const row: Record<string, string> = {};
       headers.forEach((h, i) => {
         row[h] = (values[i] ?? '').trim();
@@ -297,10 +313,8 @@ function parseCsv(content: string): Array<Record<string, string>> {
       return row;
     });
   } else {
-    // No header row - use generic column names
-    const headers = firstValues.map((_, i) => `column_${i + 1}`);
-    return lines.map((line) => {
-      const values = parseCsvLine(line, delimiter);
+    const headers = firstRow.map((_, i) => `column_${i + 1}`);
+    return records.map((values) => {
       const row: Record<string, string> = {};
       headers.forEach((h, i) => {
         row[h] = (values[i] ?? '').trim();
