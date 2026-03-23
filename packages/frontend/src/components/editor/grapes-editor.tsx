@@ -360,6 +360,7 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
   function GrapesEditor({ initialContent, onChange, onSave, saving }, ref) {
     const editorRef = useRef<Editor | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const isRawHtmlRef = useRef(false); // true when content is raw HTML, not MJML
     const [viewport, setViewport] = useState<'desktop' | 'mobile'>('desktop');
     const [preview, setPreview] = useState(false);
     const [ready, setReady] = useState(false);
@@ -381,6 +382,10 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
     useImperativeHandle(ref, () => ({
       getHtml: () => {
         if (!editorRef.current) return '';
+        // For raw HTML content, export directly without MJML compilation
+        if (isRawHtmlRef.current) {
+          return editorRef.current.getHtml() + '<style>' + editorRef.current.getCss() + '</style>';
+        }
         try {
           const result = editorRef.current.runCommand('mjml-code-to-html') as { html: string };
           return result?.html ?? '';
@@ -697,12 +702,15 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
         content: `<mj-image src="https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg" href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" alt="Watch Video" width="100%" padding="10px 25px" border-radius="8px" data-video="true" />`,
       });
 
-      // Load content
+      // Load content — detect if it's raw HTML (not MJML)
       const content = initialContent || DEFAULT_MJML;
+      const isMjml = content.trimStart().startsWith('<mjml') || content.trimStart().startsWith('{');
+      isRawHtmlRef.current = !isMjml && content !== DEFAULT_MJML;
       try {
         const parsed = JSON.parse(content);
         if (parsed && typeof parsed === 'object' && (parsed.pages || parsed.styles)) {
           editor.loadProjectData(parsed);
+          isRawHtmlRef.current = false; // JSON project data is MJML-based
         } else {
           editor.setComponents(content);
         }
@@ -831,8 +839,14 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
           try {
-            const result = editor.runCommand('mjml-code-to-html') as { html: string };
-            onChange(result?.html ?? editor.getHtml(), JSON.stringify(editor.getProjectData()));
+            let html: string;
+            if (isRawHtmlRef.current) {
+              html = editor.getHtml() + '<style>' + editor.getCss() + '</style>';
+            } else {
+              const result = editor.runCommand('mjml-code-to-html') as { html: string };
+              html = result?.html ?? editor.getHtml();
+            }
+            onChange(html, JSON.stringify(editor.getProjectData()));
           } catch { /* ignore */ }
         }, 800);
       };
