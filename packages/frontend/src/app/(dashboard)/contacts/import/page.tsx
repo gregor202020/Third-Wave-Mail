@@ -67,7 +67,7 @@ export default function ContactImportPage() {
   const { data: importData } = useQuery({
     queryKey: queryKeys.imports.detail(importId!),
     queryFn: () =>
-      api.get<{ data: Import }>(`/imports/${importId}`).then((r) => r.data),
+      api.get<{ data: Import }>(`/contacts/import/${importId}`).then((r) => r.data),
     enabled: stage === 'processing' && importId !== null,
     refetchInterval: 2000,
   });
@@ -88,7 +88,7 @@ export default function ContactImportPage() {
     queryKey: queryKeys.imports.errors(importId!),
     queryFn: () =>
       api.get<{ data: Array<{ row: number; field: string; message: string }> }>(
-        `/imports/${importId}/errors`
+        `/contacts/import/${importId}/errors`
       ).then((r) => r.data),
     enabled: stage === 'done' && importId !== null,
   });
@@ -170,7 +170,7 @@ export default function ContactImportPage() {
   const handleMappingConfirm = async (mapping: Record<string, string>) => {
     if (!importId) return;
     try {
-      await api.post(`/imports/${importId}/mapping`, { mapping });
+      await api.post(`/contacts/import/${importId}/mapping`, { mapping });
       setStage('processing');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to save mapping';
