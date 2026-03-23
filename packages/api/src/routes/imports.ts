@@ -388,7 +388,8 @@ export const importRoutes: FastifyPluginAsync = async (app) => {
     const importQueue = new Queue('import', { connection: redis as unknown as ConnectionOptions });
     await importQueue.add('process', {
       importId: imp.id,
-      rows,
+      data: body.text,
+      type: 'paste' as const,
       mapping,
       updateExisting: body.update_existing ?? true,
       listId,
@@ -403,7 +404,13 @@ export const importRoutes: FastifyPluginAsync = async (app) => {
     const db = getDb();
     const redis = getRedis();
 
-    const file = await request.file();
+    let file;
+    try {
+      file = await request.file();
+    } catch (err) {
+      request.log.error({ err }, 'Failed to read multipart file');
+      throw new AppError(400, ErrorCode.VALIDATION_ERROR, 'Failed to read uploaded file');
+    }
     if (!file) {
       throw new AppError(400, ErrorCode.VALIDATION_ERROR, 'No file uploaded');
     }
@@ -411,6 +418,7 @@ export const importRoutes: FastifyPluginAsync = async (app) => {
     // Read file content
     const buffer = await file.toBuffer();
     const csvContent = buffer.toString('utf-8');
+    request.log.info({ fileSize: buffer.length, csvLength: csvContent.length, filename: file.filename }, 'CSV file received');
 
     // Parse additional form fields
     const fields = file.fields;
@@ -439,12 +447,14 @@ export const importRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const rows = parseCsv(csvContent);
+    request.log.info({ parsedRows: rows.length }, 'CSV parsed');
     if (rows.length === 0) {
       throw new AppError(400, ErrorCode.VALIDATION_ERROR, 'No valid data found in CSV');
     }
 
     const headers = Object.keys(rows[0]!);
     const mapping = userMapping ?? smartDetectMapping(headers, rows);
+    request.log.info({ headers, mapping, rowCount: rows.length }, 'CSV mapping resolved');
 
     // Ensure email column is detected
     if (!Object.values(mapping).includes('email')) {
@@ -473,7 +483,8 @@ export const importRoutes: FastifyPluginAsync = async (app) => {
     const importQueue = new Queue('import', { connection: redis as unknown as ConnectionOptions });
     await importQueue.add('process', {
       importId: imp.id,
-      rows,
+      data: csvContent,
+      type: 'csv' as const,
       mapping,
       updateExisting,
       listId: resolvedListId,
