@@ -220,7 +220,7 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
           only_engaged_days: resend_engaged_only ? 90 : undefined,
         }
       : null;
-    onSave({ ...apiFields, tags: tagsArray as unknown as string, resend_config });
+    onSave({ ...apiFields, tags: tagsArray as unknown as string, resend_config } as Partial<CampaignFormData>);
   }, [onSave]);
 
   const toggleSection = (idx: number) => {
