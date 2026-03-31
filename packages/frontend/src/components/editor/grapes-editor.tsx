@@ -670,6 +670,7 @@ export const GrapesEditor = forwardRef<GrapesEditorRef, GrapesEditorProps>(
               if (node && node.tagName === 'FONT') {
                 node.removeAttribute('size');
                 node.style.fontSize = val;
+                node.style.lineHeight = '1.3';
               }
             }
           }
