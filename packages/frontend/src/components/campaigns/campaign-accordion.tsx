@@ -252,7 +252,6 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
     { title: 'Recipients', icon: Users, valid: recipientsValid },
     { title: 'Design', icon: Palette, valid: designValid },
     { title: 'Scheduling', icon: Clock, valid: schedulingValid },
-    { title: 'Warmup', icon: Flame, valid: true },
     { title: 'Tracking', icon: BarChart, valid: true }, // always valid, optional settings
     { title: 'A/B Testing', icon: FlaskConical, valid: abValid },
     { title: 'Resend to Non-Openers', icon: RotateCcw, valid: resendValid },
@@ -380,6 +379,39 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
                 </SelectContent>
               </Select>
             </div>
+            <div className="border-t border-card-border pt-4 mt-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Warmup Schedule</Label>
+                <Switch
+                  checked={formData.warmup_enabled}
+                  onCheckedChange={(checked) => update({ warmup_enabled: !!checked })}
+                />
+              </div>
+              {formData.warmup_enabled && (
+                <>
+                  <div className="mt-3">
+                    <Label className="text-xs text-text-muted mb-1">Warmup Week</Label>
+                    <Select value={formData.warmup_week} onValueChange={(val) => val && update({ warmup_week: val })}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="week1">Week 1 — 500, 500, 750, 750, 800, 800, remainder</SelectItem>
+                        <SelectItem value="week2">Week 2 — 1.5k, 1.5k, 2k, 2k, 3k, 3k, 4k</SelectItem>
+                        <SelectItem value="week3">Week 3 — 5k, 5k, 7.5k, 7.5k, 10k, 10k, 12.5k</SelectItem>
+                        <SelectItem value="week4">Week 4 — 15k, 15k, 20k, 20k, 25k, 25k, 30k</SelectItem>
+                        <SelectItem value="week5">Week 5 — 40k, 50k, 60k, 75k, 90k, 110k, 130k</SelectItem>
+                        <SelectItem value="week6">Week 6 — 150k+ daily</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-[11px] text-text-muted mt-2">
+                    Contacts will be split into 7 daily batches with increasing volume.
+                    Gmail addresses are sent first for best engagement signals.
+                  </p>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -461,50 +493,10 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
         )}
       </div>
 
-      {/* Section 5: Warmup */}
+      {/* Section 5: Tracking */}
       <div>
         <SectionHeader number={5} title={sections[4].title} icon={sections[4].icon} isValid={sections[4].valid} isOpen={openSection === 4} onToggle={() => toggleSection(4)} />
         {openSection === 4 && (
-          <div className="mt-2 bg-card border border-card-border rounded-[14px] p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs">Enable Warmup Schedule</Label>
-              <Switch
-                checked={formData.warmup_enabled}
-                onCheckedChange={(checked) => update({ warmup_enabled: !!checked })}
-              />
-            </div>
-            {formData.warmup_enabled && (
-              <>
-                <div>
-                  <Label className="text-xs text-text-muted mb-1">Warmup Week</Label>
-                  <Select value={formData.warmup_week} onValueChange={(val) => val && update({ warmup_week: val })}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="week1">Week 1 — 500, 500, 750, 750, 800, 800, remainder</SelectItem>
-                      <SelectItem value="week2">Week 2 — 1.5k, 1.5k, 2k, 2k, 3k, 3k, 4k</SelectItem>
-                      <SelectItem value="week3">Week 3 — 5k, 5k, 7.5k, 7.5k, 10k, 10k, 12.5k</SelectItem>
-                      <SelectItem value="week4">Week 4 — 15k, 15k, 20k, 20k, 25k, 25k, 30k</SelectItem>
-                      <SelectItem value="week5">Week 5 — 40k, 50k, 60k, 75k, 90k, 110k, 130k</SelectItem>
-                      <SelectItem value="week6">Week 6 — 150k+ daily</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <p className="text-[11px] text-text-muted">
-                  Contacts will be split into 7 daily batches with increasing volume.
-                  Gmail addresses are sent first for best engagement signals.
-                </p>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Section 6: Tracking */}
-      <div>
-        <SectionHeader number={6} title={sections[5].title} icon={sections[5].icon} isValid={sections[5].valid} isOpen={openSection === 5} onToggle={() => toggleSection(5)} />
-        {openSection === 5 && (
           <div className="mt-2 bg-card border border-card-border rounded-[14px] p-5 space-y-4">
             <div className="flex items-center justify-between">
               <Label className="text-xs">UTM Tracking</Label>
@@ -572,10 +564,10 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
         )}
       </div>
 
-      {/* Section 7: A/B Testing */}
+      {/* Section 6: A/B Testing */}
       <div>
-        <SectionHeader number={7} title={sections[6].title} icon={sections[6].icon} isValid={sections[6].valid} isOpen={openSection === 6} onToggle={() => toggleSection(6)} />
-        {openSection === 6 && (
+        <SectionHeader number={6} title={sections[5].title} icon={sections[5].icon} isValid={sections[5].valid} isOpen={openSection === 5} onToggle={() => toggleSection(5)} />
+        {openSection === 5 && (
           <div className="mt-2 bg-card border border-card-border rounded-[14px] p-5 space-y-4">
             <div className="flex items-center justify-between">
               <Label className="text-xs">Enable A/B Testing</Label>
@@ -667,10 +659,10 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
         )}
       </div>
 
-      {/* Section 8: Resend to Non-Openers */}
+      {/* Section 7: Resend to Non-Openers */}
       <div>
-        <SectionHeader number={8} title={sections[7].title} icon={sections[7].icon} isValid={sections[7].valid} isOpen={openSection === 7} onToggle={() => toggleSection(7)} />
-        {openSection === 7 && (
+        <SectionHeader number={7} title={sections[6].title} icon={sections[6].icon} isValid={sections[6].valid} isOpen={openSection === 6} onToggle={() => toggleSection(6)} />
+        {openSection === 6 && (
           <div className="mt-2 bg-card border border-card-border rounded-[14px] p-5 space-y-4">
             <div className="flex items-center justify-between">
               <Label className="text-xs">Enable Resend to Non-Openers</Label>
@@ -747,10 +739,10 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
         )}
       </div>
 
-      {/* Section 9: Review & Send */}
+      {/* Section 8: Review & Send */}
       <div>
-        <SectionHeader number={9} title={sections[8].title} icon={sections[8].icon} isValid={sections[8].valid} isOpen={openSection === 8} onToggle={() => toggleSection(8)} />
-        {openSection === 8 && (
+        <SectionHeader number={8} title={sections[7].title} icon={sections[7].icon} isValid={sections[7].valid} isOpen={openSection === 7} onToggle={() => toggleSection(7)} />
+        {openSection === 7 && (
           <div className="mt-2 bg-card border border-card-border rounded-[14px] p-5 space-y-5">
             {/* Summary */}
             <div className="space-y-3">
