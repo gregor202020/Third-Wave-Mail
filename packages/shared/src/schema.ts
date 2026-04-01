@@ -214,6 +214,7 @@ export interface CampaignsTable {
   resend_enabled: Generated<boolean>;
   resend_config: Record<string, unknown> | null;
   resend_of: number | null;
+  sending_domain: Generated<string>;
   tags: Generated<string[]>;
   utm_enabled: Generated<boolean>;
   utm_source: Generated<string>;

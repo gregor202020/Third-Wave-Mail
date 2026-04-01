@@ -20,6 +20,7 @@ export interface SendEmailParams {
   configurationSet?: string;
   headers?: Record<string, string>;
   messageId: string;
+  sendingDomain?: string;
 }
 
 export async function sendEmail(params: SendEmailParams): Promise<string | undefined> {

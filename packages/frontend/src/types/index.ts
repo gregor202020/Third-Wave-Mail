@@ -154,6 +154,7 @@ export interface Campaign {
   ab_test_config: Record<string, unknown> | null;
   resend_enabled: boolean;
   resend_config: Record<string, unknown> | null;
+  sending_domain: string;
   tags: string | null;
   utm_enabled: boolean;
   utm_source: string | null;

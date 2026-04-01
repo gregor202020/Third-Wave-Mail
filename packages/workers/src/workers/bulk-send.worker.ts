@@ -211,10 +211,14 @@ export function createBulkSendWorker(): Worker {
         const headers = getUnsubscribeHeaders(messageId);
         headers['X-SES-CONFIGURATION-SET'] = SES_CONFIG_SET;
 
-        // Build from address
+        // Build from address using sending subdomain for reputation isolation
+        const sendingDomain = (campaign as Record<string, unknown>).sending_domain as string || 'news';
+        const fromUser = campaign.from_email?.split('@')[0] ?? 'info';
+        const fromDomain = sendingDomain === 'root' ? 'thirdwavebbq.com.au' : `${sendingDomain}.thirdwavebbq.com.au`;
+        const fromEmail = `${fromUser}@${fromDomain}`;
         const fromAddress = campaign.from_name
-          ? `${campaign.from_name} <${campaign.from_email}>`
-          : campaign.from_email;
+          ? `${campaign.from_name} <${fromEmail}>`
+          : fromEmail;
 
         // Send via SES
         const sesMessageId = await sendEmail({
@@ -222,7 +226,7 @@ export function createBulkSendWorker(): Worker {
           to: contact.email,
           subject,
           html,
-          replyTo: campaign.reply_to ?? undefined,
+          replyTo: campaign.reply_to ?? campaign.from_email ?? undefined,
           configurationSet: SES_CONFIG_SET,
           headers,
           messageId,

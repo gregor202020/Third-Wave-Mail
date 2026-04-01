@@ -43,6 +43,7 @@ interface CampaignFormData {
   preview_text: string;
   from_name: string;
   from_email: string;
+  sending_domain: string;
   segment_id: number | null;
   list_id: number | null;
   exclude_segment_ids: number[];
@@ -94,6 +95,7 @@ function getInitialFormData(campaign: Campaign): CampaignFormData {
     preview_text: campaign.preview_text ?? '',
     from_name: campaign.from_name ?? '',
     from_email: campaign.from_email ?? '',
+    sending_domain: campaign.sending_domain ?? 'news',
     segment_id: campaign.segment_id ?? null,
     list_id: campaign.list_id ?? null,
     exclude_segment_ids: [],
@@ -276,6 +278,18 @@ export function CampaignAccordion({ campaign, onSave, onSend, onSchedule, isSavi
                 <Label htmlFor="from_email" className="text-xs text-text-muted mb-1">From Email</Label>
                 <Input id="from_email" type="email" value={formData.from_email} onChange={(e) => update({ from_email: e.target.value })} onBlur={handleBlurSave} />
               </div>
+            </div>
+            <div>
+              <Label className="text-xs text-text-muted mb-1">Sending Type</Label>
+              <Select value={formData.sending_domain} onValueChange={(val) => { update({ sending_domain: val }); handleBlurSave(); }}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="news">Marketing / Newsletter</SelectItem>
+                  <SelectItem value="franchise">Franchise</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label htmlFor="reply_to" className="text-xs text-text-muted mb-1">Reply-to Email (optional)</Label>
