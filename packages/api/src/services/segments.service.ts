@@ -311,8 +311,8 @@ function buildRuleFilter(
 ): (eb: ExpressionBuilder<Database, 'contacts'>) => Expression<SqlBool> {
   return (eb: ExpressionBuilder<Database, 'contacts'>) => {
     const conditions = group.rules.map((rule) => {
-      if ('conjunction' in rule) {
-        // Nested group — TypeScript narrows to SegmentRuleGroup via 'conjunction' in rule
+      if (isSegmentRuleGroup(rule)) {
+        // Nested group — accept both legacy `logic` and canonical `conjunction`.
         return buildRuleFilter(rule)(eb);
       }
       return buildSingleRule(eb, rule);
@@ -322,7 +322,7 @@ function buildRuleFilter(
       return eb.val(true);
     }
 
-    if (group.conjunction === 'or') {
+    if (getRuleGroupConjunction(group) === 'or') {
       return eb.or(conditions);
     }
     return eb.and(conditions);
@@ -415,4 +415,13 @@ function buildJsonbRule(path: string, operator: string, value: unknown): Express
     default:
       throw new AppError(400, ErrorCode.VALIDATION_ERROR, `Unsupported operator for custom field: ${operator}`);
   }
+}
+
+function isSegmentRuleGroup(rule: SegmentRule | SegmentRuleGroup): rule is SegmentRuleGroup {
+  return 'rules' in rule && Array.isArray(rule.rules);
+}
+
+function getRuleGroupConjunction(group: SegmentRuleGroup): 'and' | 'or' {
+  const withLegacyLogic = group as SegmentRuleGroup & { logic?: 'and' | 'or' };
+  return withLegacyLogic.conjunction ?? withLegacyLogic.logic ?? 'and';
 }

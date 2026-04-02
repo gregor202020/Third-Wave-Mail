@@ -5,7 +5,6 @@ import {
   ErrorCode,
   SegmentType,
   ContactStatus,
-  resolveSegmentContactIds,
   buildRuleFilter,
 } from '@twmail/shared';
 import type { SegmentRuleGroup } from '@twmail/shared';
@@ -180,7 +179,7 @@ export const segmentRoutes: FastifyPluginAsync = async (app) => {
       .where('status', '=', ContactStatus.ACTIVE)
       .where(ruleFilter);
 
-    let countQuery = db
+    const countQuery = db
       .selectFrom('contacts')
       .select(db.fn.countAll<number>().as('count'))
       .where('status', '=', ContactStatus.ACTIVE)

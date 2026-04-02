@@ -59,6 +59,16 @@ function autoDetectMapping(headers: string[]): Record<string, string> {
   return mapping;
 }
 
+function parseUserMappingJson(value: string): Record<string, string> | undefined {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    const result = mappingPresetSchema.shape.mapping.safeParse(parsed);
+    return result.success ? result.data : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Smart column detection: scan cell values to determine what each column contains.
  * Falls back to header-based detection when headers match known names.
@@ -439,11 +449,7 @@ export const importRoutes: FastifyPluginAsync = async (app) => {
       updateExisting = fields['update_existing'].value !== 'false';
     }
     if (fields['mapping'] && 'value' in fields['mapping']) {
-      try {
-        userMapping = JSON.parse((fields['mapping'] as { value: string }).value);
-      } catch {
-        // ignore invalid mapping JSON
-      }
+      userMapping = parseUserMappingJson((fields['mapping'] as { value: string }).value);
     }
 
     const rows = parseCsv(csvContent);

@@ -36,18 +36,18 @@ export function buildRuleFilter(
 ): (eb: ExpressionBuilder<Database, 'contacts'>) => Expression<SqlBool> {
   return (eb: ExpressionBuilder<Database, 'contacts'>) => {
     const conditions = group.rules.map((rule) => {
-      if ('conjunction' in rule) {
+      if (isRuleGroup(rule)) {
         // Nested group — recurse
-        return buildRuleFilter(rule as SegmentRuleGroup)(eb);
+        return buildRuleFilter(rule)(eb);
       }
-      return buildSingleRule(eb, rule as SegmentRule);
+      return buildSingleRule(eb, rule);
     });
 
     if (conditions.length === 0) {
       return eb.val(true);
     }
 
-    if (group.conjunction === 'or') {
+    if (getGroupConjunction(group) === 'or') {
       return eb.or(conditions);
     }
     return eb.and(conditions);
@@ -171,6 +171,14 @@ function buildJsonbRule(
     default:
       throw new Error(`Unsupported operator for custom field: ${operator}`);
   }
+}
+
+function isRuleGroup(rule: SegmentRule | SegmentRuleGroup): rule is SegmentRuleGroup {
+  return 'rules' in rule && Array.isArray(rule.rules);
+}
+
+function getGroupConjunction(group: SegmentRuleGroup): 'and' | 'or' {
+  return group.conjunction ?? group.logic ?? 'and';
 }
 
 // ============================================================================

@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import * as Sentry from '@sentry/node';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
@@ -120,6 +121,7 @@ export async function buildApp() {
   await app.register(reportRoutes, { prefix: '/api/reports' });
   await app.register(userRoutes, { prefix: '/api/users' });
   await app.register(settingsRoutes, { prefix: '/api/settings' });
+  Sentry.setupFastifyErrorHandler(app);
 
   // Static asset serving (no auth - images need to be publicly accessible in emails)
   app.get<{ Params: { filename: string } }>('/assets/:filename', async (request, reply) => {
@@ -127,13 +129,23 @@ export async function buildApp() {
     // Sanitize filename to prevent directory traversal
     const safe = filename.replace(/[^a-zA-Z0-9._-]/g, '');
     if (safe !== filename || filename.includes('..')) {
-      return reply.status(400).send({ error: 'Invalid filename' });
+      return reply.status(400).send({
+        error: {
+          code: 'INVALID_FILENAME',
+          message: 'Invalid filename',
+        },
+      });
     }
     const { join } = await import('path');
     const { createReadStream, existsSync } = await import('fs');
     const filePath = join(cfg.ASSETS_DIR, safe);
     if (!existsSync(filePath)) {
-      return reply.status(404).send({ error: 'Not found' });
+      return reply.status(404).send({
+        error: {
+          code: 'ASSET_NOT_FOUND',
+          message: 'Not found',
+        },
+      });
     }
     const ext = safe.split('.').pop()?.toLowerCase();
     const mimeMap: Record<string, string> = {

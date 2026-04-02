@@ -3,11 +3,10 @@
 -- COMP-06: Physical mailing address required for sends
 
 -- Add physical_address column to settings singleton
-ALTER TABLE settings ADD COLUMN physical_address TEXT NOT NULL DEFAULT '';
+ALTER TABLE settings ADD COLUMN IF NOT EXISTS physical_address TEXT NOT NULL DEFAULT '';
 
--- Partial unique index on (message_id, event_type) for bounce + complaint events.
--- Ensures at-least-once SNS delivery cannot produce duplicate suppression records.
--- Includes soft bounces (6) — a single delivery cannot soft-bounce twice.
-CREATE UNIQUE INDEX idx_events_dedup_bounce_complaint
-  ON events (message_id, event_type)
-  WHERE event_type IN (5, 6, 7) AND message_id IS NOT NULL;
+-- Partitioned parent tables cannot support the original unique index shape here.
+-- Maintain a supporting lookup index; application code now performs dedup safely.
+CREATE INDEX IF NOT EXISTS idx_events_message_type_time
+  ON events (message_id, event_type, event_time DESC)
+  WHERE message_id IS NOT NULL AND event_type IN (5, 6, 7);

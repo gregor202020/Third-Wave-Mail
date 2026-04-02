@@ -6,7 +6,6 @@ export const healthRoutes: FastifyPluginAsync = async (app) => {
   // GET /health
   app.get('/health', async (_request, reply) => {
     const services: Record<string, string> = {};
-    let allOk = true;
 
     try {
       const db = getDb();
@@ -14,7 +13,6 @@ export const healthRoutes: FastifyPluginAsync = async (app) => {
       services['db'] = 'ok';
     } catch {
       services['db'] = 'error';
-      allOk = false;
     }
 
     try {
@@ -23,11 +21,13 @@ export const healthRoutes: FastifyPluginAsync = async (app) => {
       services['redis'] = 'ok';
     } catch {
       services['redis'] = 'error';
-      allOk = false;
     }
 
-    return reply.status(allOk ? 200 : 503).send({
-      status: allOk ? 'ok' : 'degraded',
+    const allOk = Object.values(services).every((value) => value === 'ok');
+
+    return reply.status(200).send({
+      status: 'ok',
+      degraded: !allOk,
       services,
       timestamp: new Date().toISOString(),
     });

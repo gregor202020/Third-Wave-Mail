@@ -319,10 +319,12 @@ CREATE INDEX idx_events_campaign_stats   ON events (campaign_id, event_type, eve
 CREATE INDEX idx_events_contact_timeline ON events (contact_id, event_time DESC);
 CREATE INDEX idx_events_message          ON events (message_id);
 
--- Unique partial index for bounce/complaint/unsubscribe dedup
-CREATE UNIQUE INDEX idx_events_bounce_complaint_dedup
-  ON events (message_id, event_type)
-  WHERE event_type IN (5, 6, 7);
+-- Partitioned parent tables cannot enforce a unique index on (message_id, event_type)
+-- unless the partition key is included. Keep a lookup index here and let the
+-- application perform dedup with an advisory lock + existence check.
+CREATE INDEX idx_events_message_type_time
+  ON events (message_id, event_type, event_time DESC)
+  WHERE message_id IS NOT NULL AND event_type IN (5, 6, 7);
 
 -- Create monthly partitions 2025-2027
 DO $$

@@ -24,10 +24,11 @@ COPY --from=base /app/packages/shared/dist ./packages/shared/dist/
 COPY --from=base /app/packages/shared/package.json ./packages/shared/
 COPY --from=base /app/packages/workers/dist ./packages/workers/dist/
 COPY --from=base /app/packages/workers/package.json ./packages/workers/
+COPY --from=base /app/packages/workers/src/instrument.mjs ./packages/workers/src/instrument.mjs
 COPY --from=base /app/package.json ./
 
 RUN mkdir -p node_modules/@twmail && \
     ln -sf /app/packages/shared node_modules/@twmail/shared
 
 ENV NODE_ENV=production
-CMD ["node", "packages/workers/dist/index.js"]
+CMD ["node", "--import", "./packages/workers/src/instrument.mjs", "packages/workers/dist/index.js"]

@@ -198,6 +198,7 @@ export interface SegmentRule {
 }
 
 export interface SegmentRuleGroup {
-  conjunction: 'and' | 'or';
+  conjunction?: 'and' | 'or';
+  logic?: 'and' | 'or';
   rules: (SegmentRule | SegmentRuleGroup)[];
 }

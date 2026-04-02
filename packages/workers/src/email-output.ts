@@ -29,10 +29,38 @@ export function isMjmlSource(html: string): boolean {
  * @throws Error with OPS-05 code if relative URLs are found, including up to 3 examples.
  */
 export function assertAbsoluteUrls(html: string, campaignId: number): string {
-  const baseUrl = process.env.PUBLIC_URL || process.env.BASE_URL || 'https://mail.thirdwavebbq.com.au';
-  // Convert relative URLs to absolute instead of throwing
-  return html.replace(
-    /((?:src|href)=")(?!https?:|mailto:|tel:|cid:|data:|#|\{\{|$)([^"]{1,200})(")/gi,
-    (_match, prefix, relUrl, suffix) => `${prefix}${baseUrl}${relUrl.startsWith('/') ? '' : '/'}${relUrl}${suffix}`,
+  const relativeUrls: string[] = [];
+  const attributeUrlRe = /(?:src|href)="([^"]{0,200})"/gi;
+
+  for (const match of html.matchAll(attributeUrlRe)) {
+    const url = match[1];
+    if (!url || isAllowedEmailUrl(url)) {
+      continue;
+    }
+    relativeUrls.push(url);
+    if (relativeUrls.length === 3) {
+      break;
+    }
+  }
+
+  if (relativeUrls.length > 0) {
+    throw new Error(
+      `OPS-05 Campaign ${campaignId} contains relative URLs: ${relativeUrls.join(', ')}`,
+    );
+  }
+
+  return html;
+}
+
+function isAllowedEmailUrl(url: string): boolean {
+  return (
+    url.startsWith('https://') ||
+    url.startsWith('http://') ||
+    url.startsWith('mailto:') ||
+    url.startsWith('tel:') ||
+    url.startsWith('cid:') ||
+    url.startsWith('data:') ||
+    url.startsWith('#') ||
+    url.startsWith('{{')
   );
 }

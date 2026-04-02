@@ -111,7 +111,7 @@ export const contactRoutes: FastifyPluginAsync = async (app) => {
 
     return reply.send({
       data: contacts,
-      pagination: { page, per_page: perPage, total, total_pages: Math.ceil(total / perPage) },
+      meta: { page, per_page: perPage, total, total_pages: Math.ceil(total / perPage) },
     });
   });
 
@@ -171,7 +171,7 @@ export const contactRoutes: FastifyPluginAsync = async (app) => {
 
     return reply.send({
       data: contacts,
-      pagination: { page, per_page: perPage, total, total_pages: Math.ceil(total / perPage) },
+      meta: { page, per_page: perPage, total, total_pages: Math.ceil(total / perPage) },
     });
   });
 

@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import crypto from 'node:crypto';
 import { getDb, ContactStatus, EventType, MessageStatus } from '@twmail/shared';
-import type { Kysely } from 'kysely';
+import { sql, type Kysely } from 'kysely';
 import type { Database } from '@twmail/shared';
 
 // Fields used to build the signing string for SNS signature verification
@@ -115,6 +115,63 @@ async function verifySnsSignature(
   }
 }
 
+export async function processBounceSnsEvent(
+  db: Kysely<Database>,
+  snsMessageId: string,
+  messageId: string,
+  contactId: number,
+  campaignId: number,
+  variantId: number | null,
+  bounceType: string,
+  metadata: Record<string, unknown>,
+): Promise<{ inserted: boolean }> {
+  const eventType = bounceType === 'Permanent' ? EventType.HARD_BOUNCE : EventType.SOFT_BOUNCE;
+  const eventValues = buildBounceEventValues(
+    snsMessageId,
+    messageId,
+    contactId,
+    campaignId,
+    variantId,
+    bounceType,
+    eventType,
+    metadata,
+  );
+
+  try {
+    const insertResult = await db
+      .insertInto('events')
+      .values(eventValues)
+      .onConflict((oc) => oc.columns(['message_id', 'event_type']).doNothing())
+      .executeTakeFirst();
+
+    return {
+      inserted: (insertResult?.numInsertedOrUpdatedRows ?? 0n) > 0n,
+    };
+  } catch (error) {
+    if (!isMissingConflictConstraintError(error)) {
+      throw error;
+    }
+
+    return db.transaction().execute(async (trx) => {
+      await sql`SELECT pg_advisory_xact_lock(hashtext(${messageId}), ${eventType})`.execute(trx);
+
+      const existing = await trx
+        .selectFrom('events')
+        .select('id')
+        .where('message_id', '=', messageId)
+        .where('event_type', '=', eventType)
+        .executeTakeFirst();
+
+      if (existing) {
+        return { inserted: false };
+      }
+
+      await trx.insertInto('events').values(eventValues).execute();
+      return { inserted: true };
+    });
+  }
+}
+
 export const webhooksInboundRoutes: FastifyPluginAsync = async (app) => {
   // POST /api/webhooks/inbound/sns — SES SNS notification receiver
   app.post('/inbound/sns', async (request, reply) => {
@@ -125,8 +182,16 @@ export const webhooksInboundRoutes: FastifyPluginAsync = async (app) => {
     request.log.info({ snsType: body['Type'], topicArn: body['TopicArn'], bodyKeys: Object.keys(body) }, 'SNS webhook received');
     const isValid = await verifySnsSignature(body);
     if (!isValid) {
-      request.log.warn({ signingCertUrl: body['SigningCertURL'], signatureVersion: body['SignatureVersion'] }, 'SNS signature verification failed, processing anyway');
-      // Process anyway - AWS SNS signatures can fail due to cert fetching issues
+      request.log.warn(
+        { signingCertUrl: body['SigningCertURL'], signatureVersion: body['SignatureVersion'] },
+        'SNS signature verification failed',
+      );
+      return reply.status(400).send({
+        error: {
+          code: 'INVALID_SNS_SIGNATURE',
+          message: 'Invalid SNS signature',
+        },
+      });
     }
 
     // Handle SNS subscription confirmation
@@ -226,34 +291,26 @@ async function processNotification(
       const bounce = data['bounce'] as Record<string, unknown>;
       const bounceType = bounce?.['bounceType'] as string;
       const isHard = bounceType === 'Permanent';
-      const eventType = isHard ? EventType.HARD_BOUNCE : EventType.SOFT_BOUNCE;
       const bouncedRecipients = bounce?.['bouncedRecipients'] as
         | Array<{ diagnosticCode?: string }>
         | undefined;
 
-      // Idempotent insert via ON CONFLICT DO NOTHING
-      const bounceInsert = await db
-        .insertInto('events')
-        .values({
-          event_type: eventType,
-          contact_id: message.contact_id,
-          campaign_id: message.campaign_id,
-          variant_id: message.variant_id,
-          message_id: message.id,
-          event_time: new Date(),
-          metadata: {
-            bounce_type: bounceType,
-            diagnostic: bouncedRecipients?.[0]?.diagnosticCode,
-            sub_type: bounce?.['bounceSubType'],
-          },
-        })
-        .onConflict((oc) =>
-          oc.columns(['message_id', 'event_type']).doNothing(),
-        )
-        .executeTakeFirst();
+      const bounceInsert = await processBounceSnsEvent(
+        db,
+        (mail?.['messageId'] as string | undefined) ?? '',
+        message.id,
+        message.contact_id,
+        message.campaign_id,
+        message.variant_id,
+        bounceType,
+        {
+          diagnostic: bouncedRecipients?.[0]?.diagnosticCode,
+          sub_type: bounce?.['bounceSubType'],
+        },
+      );
 
       // Skip side effects if this was a duplicate (0 rows inserted)
-      if ((bounceInsert?.numInsertedOrUpdatedRows ?? 0n) === 0n) {
+      if (!bounceInsert.inserted) {
         break;
       }
 
@@ -367,4 +424,38 @@ async function processNotification(
     default:
       break;
   }
+}
+
+function buildBounceEventValues(
+  snsMessageId: string,
+  messageId: string,
+  contactId: number,
+  campaignId: number,
+  variantId: number | null,
+  bounceType: string,
+  eventType: number,
+  metadata: Record<string, unknown>,
+) {
+  return {
+    event_type: eventType,
+    contact_id: contactId,
+    campaign_id: campaignId,
+    variant_id: variantId,
+    message_id: messageId,
+    event_time: new Date(),
+    metadata: {
+      sns_message_id: snsMessageId,
+      bounce_type: bounceType,
+      ...metadata,
+    },
+  };
+}
+
+function isMissingConflictConstraintError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === '42P10'
+  );
 }

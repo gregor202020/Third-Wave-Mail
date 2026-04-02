@@ -6,6 +6,28 @@ import { Queue, type ConnectionOptions } from 'bullmq';
 import { requireAuth } from '../middleware/auth.js';
 import { AppError } from '../plugins/error-handler.js';
 
+function parseNullableId(value: string): number | null {
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function parseJsonRecordString(value: string, ctx: z.RefinementCtx): Record<string, unknown> {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    // Fall through to the validation issue below.
+  }
+
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    message: 'Must be a JSON object',
+  });
+  return z.NEVER;
+}
+
 const createSchema = z.object({
   name: z.string().min(1).max(255),
   subject: z.string().max(500).optional(),
@@ -13,11 +35,14 @@ const createSchema = z.object({
   from_name: z.string().max(255).optional(),
   from_email: z.union([z.string().email(), z.literal('')]).optional(),
   reply_to: z.union([z.string().email(), z.literal('')]).optional(),
-  template_id: z.union([z.number(), z.string().transform(v => { const n = Number(v); return isNaN(n) ? null : n; })]).optional().nullable(),
+  template_id: z.union([z.number(), z.string().transform(parseNullableId)]).optional().nullable(),
   content_html: z.string().optional(),
-  content_json: z.union([z.record(z.unknown()), z.string().transform((s) => { try { return JSON.parse(s); } catch { return s; } })]).optional().nullable(),
-  segment_id: z.union([z.number(), z.string().transform(v => { const n = Number(v); return isNaN(n) ? null : n; })]).optional().nullable(),
-  list_id: z.union([z.number(), z.string().transform(v => { const n = Number(v); return isNaN(n) ? null : n; })]).optional().nullable(),
+  content_json: z
+    .union([z.record(z.unknown()), z.string().transform(parseJsonRecordString)])
+    .optional()
+    .nullable(),
+  segment_id: z.union([z.number(), z.string().transform(parseNullableId)]).optional().nullable(),
+  list_id: z.union([z.number(), z.string().transform(parseNullableId)]).optional().nullable(),
   ab_test_enabled: z.boolean().optional(),
   ab_test_config: z.record(z.unknown()).optional().nullable(),
   resend_enabled: z.boolean().optional(),
@@ -41,7 +66,7 @@ const createSchema = z.object({
 const updateSchema = createSchema.partial().strip();
 
 const scheduleSchema = z.object({
-  scheduled_at: z.string(),
+  scheduled_at: z.string().datetime().or(z.string().datetime({ offset: true })),
   timezone: z.string().optional(),
 });
 

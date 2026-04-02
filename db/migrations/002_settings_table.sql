@@ -1,5 +1,5 @@
 -- Settings table (single-row for organization-level settings)
-CREATE TABLE settings (
+CREATE TABLE IF NOT EXISTS settings (
   id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
   organization_name TEXT NOT NULL DEFAULT '',
   default_sender_email TEXT NOT NULL DEFAULT '',
@@ -10,4 +10,4 @@ CREATE TABLE settings (
 );
 
 -- Insert default row
-INSERT INTO settings (id) VALUES (1);
+INSERT INTO settings (id) VALUES (1) ON CONFLICT DO NOTHING;
