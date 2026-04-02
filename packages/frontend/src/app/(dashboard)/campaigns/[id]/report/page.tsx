@@ -155,9 +155,7 @@ export default function CampaignReportPage({ params }: { params: Promise<{ id: s
               <StatCard label="Sent" value={formatNumber(campaign.total_sent)} />
               <StatCard label="Delivered" value={formatNumber(campaign.total_delivered)} trend={`${formatPercent(deliveredRate)}`} trendUp={deliveredRate > 95} />
               <StatCard label="Unique Opens" value={formatNumber(uniqueOpens)} trend={formatPercent(uniqueOpenRate)} trendUp={uniqueOpenRate > 20} />
-              <StatCard label="Total Opens" value={formatNumber(campaign.total_opens)} trend={formatPercent(openRate)} trendUp={openRate > 20} />
               <StatCard label="Unique Clicks" value={formatNumber(uniqueClicks)} trend={formatPercent(uniqueClickRate)} trendUp={uniqueClickRate > 3} />
-              <StatCard label="Total Clicks" value={formatNumber(campaign.total_clicks)} trend={formatPercent(clickRate)} trendUp={clickRate > 3} />
               <StatCard label="Bounces" value={formatNumber(campaign.total_bounces)} />
               <StatCard label="Complaints" value={formatNumber(campaign.total_complaints)} />
             </div>
@@ -168,8 +166,8 @@ export default function CampaignReportPage({ params }: { params: Promise<{ id: s
             <DeliveryFunnel
               sent={campaign.total_sent}
               delivered={campaign.total_delivered}
-              opened={campaign.total_opens}
-              clicked={campaign.total_clicks}
+              opened={uniqueOpens}
+              clicked={uniqueClicks}
             />
           )}
 
